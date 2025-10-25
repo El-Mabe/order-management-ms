@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"orders/internal/models"
 	"orders/internal/repositories"
@@ -18,6 +19,10 @@ type ServiceError struct {
 	Message           string        `json:"message"`
 	Cause             []interface{} `json:"cause"`
 	StatusDescription string        `json:"status_description,omitempty"`
+}
+
+func (e *ServiceError) Error() string {
+	return fmt.Sprintf("status=%d, message=%s", e.Status, e.Message)
 }
 
 type OrderService interface {

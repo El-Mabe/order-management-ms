@@ -21,8 +21,6 @@ type Repository interface {
 	GetOrder(ctx context.Context, orderID string) (*models.Order, *repositories.RepositoryError)
 	SetOrder(ctx context.Context, order *models.Order) *repositories.RepositoryError
 	InvalidateOrder(ctx context.Context, orderID string) *repositories.RepositoryError
-	Ping(ctx context.Context) *repositories.RepositoryError
-	orderKey(orderID string) string
 }
 
 // CacheRepository implementa el repositorio de caché con Redis

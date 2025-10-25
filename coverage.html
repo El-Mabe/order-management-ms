@@ -1,0 +1,2076 @@
+
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+		<title>config: Go Coverage Report</title>
+		<style>
+			body {
+				background: black;
+				color: rgb(80, 80, 80);
+			}
+			body, pre, #legend span {
+				font-family: Menlo, monospace;
+				font-weight: bold;
+			}
+			#topbar {
+				background: black;
+				position: fixed;
+				top: 0; left: 0; right: 0;
+				height: 42px;
+				border-bottom: 1px solid rgb(80, 80, 80);
+			}
+			#content {
+				margin-top: 50px;
+			}
+			#nav, #legend {
+				float: left;
+				margin-left: 10px;
+			}
+			#legend {
+				margin-top: 12px;
+			}
+			#nav {
+				margin-top: 10px;
+			}
+			#legend span {
+				margin: 0 5px;
+			}
+			.cov0 { color: rgb(192, 0, 0) }
+.cov1 { color: rgb(128, 128, 128) }
+.cov2 { color: rgb(116, 140, 131) }
+.cov3 { color: rgb(104, 152, 134) }
+.cov4 { color: rgb(92, 164, 137) }
+.cov5 { color: rgb(80, 176, 140) }
+.cov6 { color: rgb(68, 188, 143) }
+.cov7 { color: rgb(56, 200, 146) }
+.cov8 { color: rgb(44, 212, 149) }
+.cov9 { color: rgb(32, 224, 152) }
+.cov10 { color: rgb(20, 236, 155) }
+
+		</style>
+	</head>
+	<body>
+		<div id="topbar">
+			<div id="nav">
+				<select id="files">
+				
+				<option value="file0">orders/cmd/api/config/config.go (0.0%)</option>
+				
+				<option value="file1">orders/cmd/api/main.go (0.0%)</option>
+				
+				<option value="file2">orders/cmd/api/server/repositories.go (0.0%)</option>
+				
+				<option value="file3">orders/cmd/api/server/routes.go (0.0%)</option>
+				
+				<option value="file4">orders/cmd/api/server/server.go (0.0%)</option>
+				
+				<option value="file5">orders/internal/errors/service_error.go (0.0%)</option>
+				
+				<option value="file6">orders/internal/handlers/health.go (0.0%)</option>
+				
+				<option value="file7">orders/internal/handlers/order.go (82.2%)</option>
+				
+				<option value="file8">orders/internal/messages/kafka/producer.go (0.0%)</option>
+				
+				<option value="file9">orders/internal/middlewares/cors.go (0.0%)</option>
+				
+				<option value="file10">orders/internal/middlewares/error_handler.go (0.0%)</option>
+				
+				<option value="file11">orders/internal/middlewares/logger.go (0.0%)</option>
+				
+				<option value="file12">orders/internal/middlewares/request_id.go (0.0%)</option>
+				
+				<option value="file13">orders/internal/middlewares/security.go (0.0%)</option>
+				
+				<option value="file14">orders/internal/models/events.go (0.0%)</option>
+				
+				<option value="file15">orders/internal/models/order.go (97.1%)</option>
+				
+				<option value="file16">orders/internal/repositories/mongodb/order.go (0.0%)</option>
+				
+				<option value="file17">orders/internal/repositories/redis/order.go (0.0%)</option>
+				
+				<option value="file18">orders/internal/repositories/repository.go (0.0%)</option>
+				
+				<option value="file19">orders/internal/services/order.go (86.0%)</option>
+				
+				<option value="file20">orders/pkg/logger/logger.go (0.0%)</option>
+				
+				</select>
+			</div>
+			<div id="legend">
+				<span>not tracked</span>
+			
+				<span class="cov0">not covered</span>
+				<span class="cov8">covered</span>
+			
+			</div>
+		</div>
+		<div id="content">
+		
+		<pre class="file" id="file0" style="display: none">package config
+
+import (
+        "fmt"
+        "time"
+
+        "github.com/spf13/viper"
+)
+
+// Config almacena toda la configuración de la aplicación
+type Config struct {
+        Server  ServerConfig
+        MongoDB MongoDBConfig
+        Redis   RedisConfig
+        Kafka   KafkaConfig
+        Logging LoggingConfig
+        App     AppConfig
+}
+
+// ServerConfig configuración del servidor HTTP
+type ServerConfig struct {
+        Port         string
+        ReadTimeout  time.Duration
+        WriteTimeout time.Duration
+        Environment  string
+}
+
+// MongoDBConfig configuración de MongoDB
+type MongoDBConfig struct {
+        URI               string
+        Database          string
+        ConnectionTimeout time.Duration
+        MaxPoolSize       uint64
+}
+
+// RedisConfig configuración de Redis
+type RedisConfig struct {
+        URL        string
+        Password   string
+        DB         int
+        PoolSize   int
+        DefaultTTL time.Duration
+}
+
+// KafkaConfig configuración de Kafka
+type KafkaConfig struct {
+        Brokers        []string
+        TopicOrders    string
+        ConsumerGroup  string
+        EnableProducer bool
+}
+
+// LoggingConfig configuración de logging
+type LoggingConfig struct {
+        Level  string
+        Format string
+}
+
+// AppConfig configuración de la aplicación
+type AppConfig struct {
+        RequestTimeout   time.Duration
+        MaxItemsPerOrder int
+        DefaultPageSize  int
+        MaxPageSize      int
+}
+
+// Load carga la configuración desde variables de entorno
+func Load() (*Config, error) <span class="cov0" title="0">{
+        viper.SetConfigFile(".env")
+        viper.AutomaticEnv()
+
+        // Intentar cargar archivo .env (opcional)
+        _ = viper.ReadInConfig()
+
+        // Valores por defecto
+        setDefaults()
+
+        config := &amp;Config{
+                Server: ServerConfig{
+                        Port:         viper.GetString("PORT"),
+                        ReadTimeout:  viper.GetDuration("SERVER_READ_TIMEOUT"),
+                        WriteTimeout: viper.GetDuration("SERVER_WRITE_TIMEOUT"),
+                        Environment:  viper.GetString("ENV"),
+                },
+                MongoDB: MongoDBConfig{
+                        URI:               viper.GetString("MONGODB_URI"),
+                        Database:          viper.GetString("MONGODB_DATABASE"),
+                        ConnectionTimeout: viper.GetDuration("MONGODB_CONNECTION_TIMEOUT"),
+                        MaxPoolSize:       viper.GetUint64("MONGODB_MAX_POOL_SIZE"),
+                },
+                Redis: RedisConfig{
+                        URL:        viper.GetString("REDIS_URL"),
+                        Password:   viper.GetString("REDIS_PASSWORD"),
+                        DB:         viper.GetInt("REDIS_DB"),
+                        PoolSize:   viper.GetInt("REDIS_POOL_SIZE"),
+                        DefaultTTL: viper.GetDuration("REDIS_DEFAULT_TTL"),
+                },
+                Kafka: KafkaConfig{
+                        Brokers:        viper.GetStringSlice("KAFKA_BROKERS"),
+                        TopicOrders:    viper.GetString("KAFKA_TOPIC_ORDERS"),
+                        ConsumerGroup:  viper.GetString("KAFKA_CONSUMER_GROUP"),
+                        EnableProducer: viper.GetBool("KAFKA_ENABLE_PRODUCER"),
+                },
+                Logging: LoggingConfig{
+                        Level:  viper.GetString("LOG_LEVEL"),
+                        Format: viper.GetString("LOG_FORMAT"),
+                },
+                App: AppConfig{
+                        RequestTimeout:   viper.GetDuration("REQUEST_TIMEOUT"),
+                        MaxItemsPerOrder: viper.GetInt("MAX_ITEMS_PER_ORDER"),
+                        DefaultPageSize:  viper.GetInt("DEFAULT_PAGE_SIZE"),
+                        MaxPageSize:      viper.GetInt("MAX_PAGE_SIZE"),
+                },
+        }
+
+        if err := config.Validate(); err != nil </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("invalid configuration: %w", err)
+        }</span>
+
+        <span class="cov0" title="0">return config, nil</span>
+}
+
+// Validate valida la configuración
+func (c *Config) Validate() error <span class="cov0" title="0">{
+        if c.Server.Port == "" </span><span class="cov0" title="0">{
+                return fmt.Errorf("PORT is required")
+        }</span>
+        <span class="cov0" title="0">if c.MongoDB.URI == "" </span><span class="cov0" title="0">{
+                return fmt.Errorf("MONGODB_URI is required")
+        }</span>
+        <span class="cov0" title="0">if c.Redis.URL == "" </span><span class="cov0" title="0">{
+                return fmt.Errorf("REDIS_URL is required")
+        }</span>
+        <span class="cov0" title="0">if len(c.Kafka.Brokers) == 0 </span><span class="cov0" title="0">{
+                return fmt.Errorf("KAFKA_BROKERS is required")
+        }</span>
+        <span class="cov0" title="0">return nil</span>
+}
+
+func setDefaults() <span class="cov0" title="0">{
+        // Server defaults
+        viper.SetDefault("ENV", "development")
+        viper.SetDefault("PORT", "3000")
+        viper.SetDefault("SERVER_READ_TIMEOUT", "10s")
+        viper.SetDefault("SERVER_WRITE_TIMEOUT", "10s")
+
+        // MongoDB defaults
+        viper.SetDefault("MONGODB_DATABASE", "orders_db")
+        viper.SetDefault("MONGODB_CONNECTION_TIMEOUT", "10s")
+        viper.SetDefault("MONGODB_MAX_POOL_SIZE", 100)
+
+        // Redis defaults
+        viper.SetDefault("REDIS_DB", 0)
+        viper.SetDefault("REDIS_POOL_SIZE", 10)
+        viper.SetDefault("REDIS_DEFAULT_TTL", "60s")
+
+        // Kafka defaults
+        viper.SetDefault("KAFKA_TOPIC_ORDERS", "orders.events")
+        viper.SetDefault("KAFKA_CONSUMER_GROUP", "orders-service")
+        viper.SetDefault("KAFKA_ENABLE_PRODUCER", true)
+
+        // Logging defaults
+        viper.SetDefault("LOG_LEVEL", "info")
+        viper.SetDefault("LOG_FORMAT", "json")
+
+        // App defaults
+        viper.SetDefault("REQUEST_TIMEOUT", "30s")
+        viper.SetDefault("MAX_ITEMS_PER_ORDER", 100)
+        viper.SetDefault("DEFAULT_PAGE_SIZE", 10)
+        viper.SetDefault("MAX_PAGE_SIZE", 100)
+}</span>
+</pre>
+		
+		<pre class="file" id="file1" style="display: none">package main
+
+import (
+        "context"
+        "fmt"
+        "net/http"
+        "os"
+        "os/signal"
+        "syscall"
+        "time"
+
+        "orders/cmd/api/config"
+        "orders/cmd/api/server"
+        "orders/pkg/logger"
+
+        "go.uber.org/zap"
+)
+
+func main() <span class="cov0" title="0">{
+        // Cargar configuración
+        cfg, err := config.Load()
+        if err != nil </span><span class="cov0" title="0">{
+                fmt.Printf("Failed to load configuration: %v\n", err)
+                os.Exit(1)
+        }</span>
+
+        // Inicializar logger
+        <span class="cov0" title="0">if err := logger.Init(cfg.Logging.Level, cfg.Logging.Format); err != nil </span><span class="cov0" title="0">{
+                fmt.Printf("Failed to initialize logger: %v\n", err)
+                os.Exit(1)
+        }</span>
+        <span class="cov0" title="0">defer logger.Sync()
+        log := logger.Get()
+        log.Info("Starting Orders Service",
+                zap.String("environment", cfg.Server.Environment),
+                zap.String("port", cfg.Server.Port),
+        )
+
+        // Inicializar dependencias (Mongo, Redis, Kafka, Repos, Services, Handlers)
+        deps, err := server.Initialize(cfg, log)
+        if err != nil </span><span class="cov0" title="0">{
+                log.Fatal("Failed to initialize dependencies", zap.Error(err))
+        }</span>
+        <span class="cov0" title="0">defer deps.Close() // Cerramos conexiones al final
+
+        // Configurar rutas y middlewares
+        router := server.SetupRouter(deps, cfg)
+
+        // Configurar servidor HTTP
+        srv := &amp;http.Server{
+                Addr:         fmt.Sprintf(":%s", cfg.Server.Port),
+                Handler:      router,
+                ReadTimeout:  cfg.Server.ReadTimeout,
+                WriteTimeout: cfg.Server.WriteTimeout,
+        }
+
+        // Iniciar servidor
+        go func() </span><span class="cov0" title="0">{
+                log.Info("Server starting", zap.String("address", srv.Addr))
+                if err := srv.ListenAndServe(); err != nil &amp;&amp; err != http.ErrServerClosed </span><span class="cov0" title="0">{
+                        log.Fatal("Failed to start server", zap.Error(err))
+                }</span>
+        }()
+
+        // Graceful shutdown
+        <span class="cov0" title="0">quit := make(chan os.Signal, 1)
+        signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
+        &lt;-quit
+
+        log.Info("Shutting down server...")
+        ctxShutdown, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+        defer cancel()
+        if err := srv.Shutdown(ctxShutdown); err != nil </span><span class="cov0" title="0">{
+                log.Error("Server forced to shutdown", zap.Error(err))
+        }</span>
+        <span class="cov0" title="0">log.Info("Server stopped")</span>
+}
+</pre>
+		
+		<pre class="file" id="file2" style="display: none">package server
+
+import (
+        "context"
+
+        "orders/cmd/api/config"
+
+        "go.mongodb.org/mongo-driver/mongo"
+        "go.mongodb.org/mongo-driver/mongo/options"
+
+        "github.com/redis/go-redis/v9"
+)
+
+func ConnectMongoDB(cfg config.MongoDBConfig) (*mongo.Client, error) <span class="cov0" title="0">{
+        ctx, cancel := context.WithTimeout(context.Background(), cfg.ConnectionTimeout)
+        defer cancel()
+
+        clientOptions := options.Client().
+                ApplyURI(cfg.URI).
+                SetMaxPoolSize(cfg.MaxPoolSize).
+                SetConnectTimeout(cfg.ConnectionTimeout)
+
+        client, err := mongo.Connect(ctx, clientOptions)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+
+        <span class="cov0" title="0">if err := client.Ping(ctx, nil); err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+        <span class="cov0" title="0">return client, nil</span>
+}
+
+func ConnectRedis(cfg config.RedisConfig) *redis.Client <span class="cov0" title="0">{
+        return redis.NewClient(&amp;redis.Options{
+                Addr:     cfg.URL,
+                Password: cfg.Password,
+                DB:       cfg.DB,
+                PoolSize: cfg.PoolSize,
+        })
+}</span>
+</pre>
+		
+		<pre class="file" id="file3" style="display: none">package server
+
+import (
+        "orders/cmd/api/config"
+        "orders/internal/handlers"
+        "orders/internal/middlewares"
+        "orders/pkg/logger"
+
+        "github.com/gin-gonic/gin"
+)
+
+// SetupRouter configura middlewares y rutas
+func SetupRouter(deps *Dependencies, cfg *config.Config) *gin.Engine <span class="cov0" title="0">{
+        router := gin.New()
+
+        log := logger.Get()
+
+        // Middlewares globales
+        router.Use(
+                gin.Recovery(),
+                middlewares.RequestID(),
+                middlewares.Security(),
+                middlewares.CORS(),
+                middlewares.Logger(log),
+                middlewares.ErrorHandler(log),
+        )
+
+        // Handlers
+        orderHandler := handlers.NewOrderHandler(deps.OrderService, log, cfg.App.DefaultPageSize, cfg.App.MaxPageSize)
+        healthHandler := handlers.NewHealthHandler(deps.MongoDB, deps.RedisClient)
+
+        // Rutas
+        router.GET("/health", healthHandler.CheckHealth)
+        api := router.Group("/api")
+        </span><span class="cov0" title="0">{
+                api.GET("/orders", orderHandler.ListOrders)
+                api.POST("/orders", orderHandler.CreateOrder)
+                api.GET("/orders/:id", orderHandler.GetOrder)
+                api.PUT("/orders/:id", orderHandler.UpdateOrderStatus)
+        }</span>
+
+        <span class="cov0" title="0">return router</span>
+}
+</pre>
+		
+		<pre class="file" id="file4" style="display: none">package server
+
+import (
+        "context"
+        "time"
+
+        "orders/cmd/api/config"
+        "orders/internal/messages/kafka"
+        "orders/internal/repositories/mongodb"
+        redisrepo "orders/internal/repositories/redis"
+        "orders/internal/services"
+
+        "github.com/redis/go-redis/v9"
+        "go.mongodb.org/mongo-driver/mongo"
+        "go.uber.org/zap"
+)
+
+type Dependencies struct {
+        MongoClient   *mongo.Client
+        MongoDB       *mongo.Database
+        RedisClient   *redis.Client
+        OrderService  services.OrderService
+        KafkaProducer *kafka.Producer
+}
+
+func Initialize(cfg *config.Config, log *zap.Logger) (*Dependencies, error) <span class="cov0" title="0">{
+        // MongoDB
+        mongoClient, err := ConnectMongoDB(cfg.MongoDB)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+        <span class="cov0" title="0">mongoDB := mongoClient.Database(cfg.MongoDB.Database)
+
+        orderRepo := mongodb.NewOrderRepository(mongoDB)
+        ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+        defer cancel()
+        _ = orderRepo.CreateIndexes(ctx) // Ignoramos error en init
+
+        // Redis
+        redisClient := ConnectRedis(cfg.Redis)
+        ctx, cancel = context.WithTimeout(context.Background(), 5*time.Second)
+        defer cancel()
+        if err := redisClient.Ping(ctx).Err(); err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+
+        // Kafka Producer
+        <span class="cov0" title="0">var kafkaProducer *kafka.Producer
+        if cfg.Kafka.EnableProducer </span><span class="cov0" title="0">{
+                kafkaProducer = kafka.NewProducer(cfg.Kafka.Brokers, cfg.Kafka.TopicOrders, log)
+        }</span>
+
+        // Repos y servicios
+        <span class="cov0" title="0">cacheRepo := redisrepo.NewCacheRepository(redisClient, cfg.Redis.DefaultTTL)
+        orderService := services.NewOrderService(orderRepo, cacheRepo, kafkaProducer, log)
+
+        return &amp;Dependencies{
+                MongoClient:   mongoClient,
+                MongoDB:       mongoDB,
+                RedisClient:   redisClient,
+                OrderService:  orderService,
+                KafkaProducer: kafkaProducer,
+        }, nil</span>
+}
+
+// Close cierra conexiones al finalizar la app
+func (d *Dependencies) Close() <span class="cov0" title="0">{
+        ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+        defer cancel()
+
+        if d.MongoClient != nil </span><span class="cov0" title="0">{
+                _ = d.MongoClient.Disconnect(ctx)
+        }</span>
+
+        <span class="cov0" title="0">if d.RedisClient != nil </span><span class="cov0" title="0">{
+                _ = d.RedisClient.Close()
+        }</span>
+
+        <span class="cov0" title="0">if d.KafkaProducer != nil </span><span class="cov0" title="0">{
+                _ = d.KafkaProducer.Close()
+        }</span>
+}
+</pre>
+		
+		<pre class="file" id="file5" style="display: none">package errors
+
+import (
+        "net/http"
+)
+
+type ServiceError struct {
+        Status            int           `json:"status"`
+        Message           string        `json:"message"`
+        Cause             []interface{} `json:"cause,omitempty"`
+        StatusDescription string        `json:"status_description,omitempty"`
+}
+
+// Implementa la interfaz error
+func (e *ServiceError) Error() string <span class="cov0" title="0">{
+        return e.Message
+}</span>
+
+// Constructor base
+func NewServiceError(status int, message string, cause error) *ServiceError <span class="cov0" title="0">{
+        causes := []interface{}{}
+        if cause != nil </span><span class="cov0" title="0">{
+                causes = append(causes, cause.Error())
+        }</span>
+
+        <span class="cov0" title="0">return &amp;ServiceError{
+                Status:            status,
+                Message:           message,
+                Cause:             causes,
+                StatusDescription: http.StatusText(status),
+        }</span>
+}
+
+// Helpers convenientes
+func BadRequest(message string, cause error) *ServiceError <span class="cov0" title="0">{
+        return NewServiceError(http.StatusBadRequest, message, cause)
+}</span>
+
+func NotFound(message string, cause error) *ServiceError <span class="cov0" title="0">{
+        return NewServiceError(http.StatusNotFound, message, cause)
+}</span>
+
+func Internal(message string, cause error) *ServiceError <span class="cov0" title="0">{
+        return NewServiceError(http.StatusInternalServerError, message, cause)
+}</span>
+</pre>
+		
+		<pre class="file" id="file6" style="display: none">package handlers
+
+import (
+        "context"
+        "net/http"
+        "time"
+
+        "github.com/gin-gonic/gin"
+        "github.com/redis/go-redis/v9"
+        "go.mongodb.org/mongo-driver/mongo"
+        "go.mongodb.org/mongo-driver/mongo/readpref"
+)
+
+// HealthHandler maneja el endpoint de health check
+type HealthHandler struct {
+        mongoDB *mongo.Database
+        redis   *redis.Client
+}
+
+// NewHealthHandler crea una nueva instancia del handler
+func NewHealthHandler(mongoDB *mongo.Database, redis *redis.Client) *HealthHandler <span class="cov0" title="0">{
+        return &amp;HealthHandler{
+                mongoDB: mongoDB,
+                redis:   redis,
+        }
+}</span>
+
+// HealthResponseGin representa la respuesta del health check
+type HealthResponse struct {
+        Status       string            `json:"status"`
+        Timestamp    time.Time         `json:"timestamp"`
+        Dependencies map[string]string `json:"dependencies"`
+}
+
+// CheckHealthGin godoc
+// @Summary Health check
+// @Description Verifica el estado del servicio y sus dependencias
+// @Tags health
+// @Produce json
+// @Success 200 {object} HealthResponseGin
+// @Failure 503 {object} HealthResponseGin
+// @Router /health [get]
+func (h *HealthHandler) CheckHealth(c *gin.Context) <span class="cov0" title="0">{
+        ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+        defer cancel()
+
+        dependencies := make(map[string]string)
+        allHealthy := true
+
+        // Check MongoDB
+        mongoStatus := "connected"
+        if err := h.mongoDB.Client().Ping(ctx, readpref.Primary()); err != nil </span><span class="cov0" title="0">{
+                mongoStatus = "disconnected"
+                allHealthy = false
+        }</span>
+        <span class="cov0" title="0">dependencies["mongodb"] = mongoStatus
+
+        // Check Redis
+        redisStatus := "connected"
+        if err := h.redis.Ping(ctx).Err(); err != nil </span><span class="cov0" title="0">{
+                redisStatus = "disconnected"
+                allHealthy = false
+        }</span>
+        <span class="cov0" title="0">dependencies["redis"] = redisStatus
+
+        // Check Kafka (simplificado - en producción verificar conexión real)
+        dependencies["kafka"] = "connected"
+
+        status := "healthy"
+        statusCode := http.StatusOK
+        if !allHealthy </span><span class="cov0" title="0">{
+                status = "unhealthy"
+                statusCode = http.StatusServiceUnavailable
+        }</span>
+
+        <span class="cov0" title="0">response := HealthResponse{
+                Status:       status,
+                Timestamp:    time.Now(),
+                Dependencies: dependencies,
+        }
+
+        c.JSON(statusCode, response)</span>
+}
+</pre>
+		
+		<pre class="file" id="file7" style="display: none">package handlers
+
+import (
+        "math"
+        "net/http"
+        "orders/internal/models"
+        "orders/internal/services"
+        "strconv"
+
+        "github.com/gin-gonic/gin"
+        "github.com/go-playground/validator/v10"
+        "go.uber.org/zap"
+)
+
+// OrderHandlerGin maneja los endpoints relacionados con órdenes usando Gin
+type OrderHandlerGin struct {
+        service         services.OrderService
+        validator       *validator.Validate
+        logger          *zap.Logger
+        maxPageSize     int
+        defaultPageSize int
+}
+
+// NewOrderHandlerGin crea una nueva instancia del handler con Gin
+// func NewOrderHandler(service services.OrderService, logger *zap.Logger) *OrderHandlerGin {
+func NewOrderHandler(service services.OrderService, logger *zap.Logger, defaultPageSize, maxPageSize int) *OrderHandlerGin <span class="cov8" title="1">{
+        return &amp;OrderHandlerGin{
+                service:         service,
+                validator:       validator.New(),
+                logger:          logger,
+                maxPageSize:     maxPageSize,
+                defaultPageSize: defaultPageSize,
+        }
+}</span>
+
+// CreateOrderRequest representa la solicitud de creación de orden
+type CreateOrderRequest struct {
+        CustomerID string             `json:"customerId" binding:"required,uuid"`
+        Items      []models.OrderItem `json:"items" binding:"required,min=1,max=100,dive"`
+}
+
+// UpdateStatusRequest representa la solicitud de actualización de estado
+type UpdateStatusRequest struct {
+        Status string `json:"status" binding:"required,oneof=NEW IN_PROGRESS DELIVERED CANCELLED"`
+}
+
+// PaginationResponse representa la información de paginación
+type PaginationResponse struct {
+        Page       int   `json:"page"`
+        Limit      int   `json:"limit"`
+        Total      int64 `json:"total"`
+        TotalPages int   `json:"totalPages"`
+}
+
+// ListOrdersResponse representa la respuesta de listado de órdenes
+type ListOrdersResponse struct {
+        Orders     []*models.Order    `json:"orders"`
+        Pagination PaginationResponse `json:"pagination"`
+}
+
+// CreateOrder godoc
+// @Summary Crear nueva orden
+// @Description Crea una nueva orden de entrega
+// @Tags orders
+// @Accept json
+// @Produce json
+// @Param order body CreateOrderRequest true "Datos de la orden"
+// @Success 201 {object} models.Order
+// @Failure 400 {object} apierrors.ErrorResponse
+// @Failure 500 {object} apierrors.ErrorResponse
+// @Router /api/v1/orders [post]
+func (h *OrderHandlerGin) CreateOrder(c *gin.Context) <span class="cov8" title="1">{
+        requestID := getRequestID(c)
+        ctx := c.Request.Context()
+
+        var req CreateOrderRequest
+        if err := c.ShouldBindJSON(&amp;req); err != nil </span><span class="cov8" title="1">{
+                h.logger.Warn("Invalid request body",
+                        zap.Error(err),
+                        zap.String("requestId", requestID),
+                )
+
+                // details := h.extractValidationErrors(err)
+                // apiErr := apierrors.NewValidationError(requestID, details)
+                // c.JSON(http.StatusBadRequest, gin.H{"error": apiErr})
+                c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+                return
+        }</span>
+
+        // Crear orden
+        <span class="cov8" title="1">order, err := h.service.CreateOrder(ctx, req.CustomerID, req.Items)
+        if err != nil </span><span class="cov0" title="0">{
+                h.logger.Error("Failed to create order",
+                        zap.String("requestId", requestID),
+                )
+                c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error"})
+                return
+        }</span>
+
+        <span class="cov8" title="1">c.JSON(http.StatusCreated, order)</span>
+}
+
+// GetOrder godoc
+// @Summary Obtener orden por ID
+// @Description Obtiene una orden específica por su ID
+// @Tags orders
+// @Produce json
+// @Param id path string true "Order ID"
+// @Success 200 {object} models.Order
+// @Failure 404 {object} apierrors.ErrorResponse
+// @Failure 500 {object} apierrors.ErrorResponse
+// @Router /api/v1/orders/{id} [get]
+func (h *OrderHandlerGin) GetOrder(c *gin.Context) <span class="cov8" title="1">{
+        requestID := getRequestID(c)
+        ctx := c.Request.Context()
+        orderID := c.Param("id")
+
+        if orderID == "" </span><span class="cov8" title="1">{
+
+                c.JSON(http.StatusBadRequest, gin.H{"error": "Order ID is required"})
+                return
+        }</span>
+
+        <span class="cov8" title="1">order, err := h.service.GetOrderByID(ctx, orderID)
+        if err != nil </span><span class="cov8" title="1">{
+                h.logger.Error("Failed to get order",
+                        // zap.Error(err),
+                        zap.String("orderId", orderID),
+                        zap.String("requestId", requestID),
+                )
+                c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error - Failed to get order "})
+                return
+        }</span>
+
+        <span class="cov8" title="1">c.JSON(http.StatusOK, order)</span>
+}
+
+// ListOrders godoc
+// @Summary Listar órdenes
+// @Description Lista órdenes con filtros opcionales y paginación
+// @Tags orders
+// @Produce json
+// @Param status query string false "Filtrar por estado"
+// @Param customerId query string false "Filtrar por ID de cliente"
+// @Param page query int false "Número de página" default(1)
+// @Param limit query int false "Resultados por página" default(10)
+// @Success 200 {object} ListOrdersResponse
+// @Failure 400 {object} apierrors.ErrorResponse
+// @Failure 500 {object} apierrors.ErrorResponse
+// @Router /api/v1/orders [get]
+func (h *OrderHandlerGin) ListOrders(c *gin.Context) <span class="cov8" title="1">{
+        requestID := getRequestID(c)
+        ctx := c.Request.Context()
+
+        // Obtener parámetros de query
+        status := c.Query("status")
+        customerID := c.Query("customerId")
+
+        page, err := strconv.Atoi(c.DefaultQuery("page", "1"))
+        if err != nil || page &lt; 1 </span><span class="cov0" title="0">{
+                page = 1
+        }</span>
+
+        <span class="cov8" title="1">limit, err := strconv.Atoi(c.DefaultQuery("limit", strconv.Itoa(h.defaultPageSize)))
+        if err != nil || limit &lt; 1 </span><span class="cov0" title="0">{
+                limit = h.defaultPageSize
+        }</span>
+        <span class="cov8" title="1">if limit &gt; h.maxPageSize </span><span class="cov0" title="0">{
+                limit = h.maxPageSize
+        }</span>
+
+        // Validar estado si se proporciona
+        <span class="cov8" title="1">if status != "" </span><span class="cov8" title="1">{
+                statusEnum := models.OrderStatus(status)
+                if !statusEnum.IsValid() </span><span class="cov8" title="1">{
+
+                        c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid status value"})
+                        return
+                }</span>
+        }
+
+        // Listar órdenes
+        <span class="cov8" title="1">orders, total, error := h.service.ListOrders(ctx, status, customerID, page, limit)
+        if error != nil </span><span class="cov0" title="0">{
+                h.logger.Error("Failed to list orders",
+                        // zap.Error(err),
+                        zap.String("requestId", requestID),
+                )
+                c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error - Failed to list orders"})
+                return
+        }</span>
+
+        // Calcular total de páginas
+        <span class="cov8" title="1">totalPages := int(math.Ceil(float64(total) / float64(limit)))
+
+        response := ListOrdersResponse{
+                Orders: orders,
+                Pagination: PaginationResponse{
+                        Page: page,
+                        // Limit:      limit,
+                        Total:      total,
+                        TotalPages: totalPages,
+                },
+        }
+
+        c.JSON(http.StatusOK, response)</span>
+}
+
+// UpdateOrderStatus godoc
+// @Summary Actualizar estado de orden
+// @Description Cambia el estado de una orden y publica un evento
+// @Tags orders
+// @Accept json
+// @Produce json
+// @Param id path string true "Order ID"
+// @Param status body UpdateStatusRequest true "Nuevo estado"
+// @Success 200 {object} models.Order
+// @Failure 400 {object} apierrors.ErrorResponse
+// @Failure 404 {object} apierrors.ErrorResponse
+// @Failure 409 {object} apierrors.ErrorResponse
+// @Failure 500 {object} apierrors.ErrorResponse
+// @Router /api/v1/orders/{id}/status [patch]
+func (h *OrderHandlerGin) UpdateOrderStatus(c *gin.Context) <span class="cov8" title="1">{
+        requestID := getRequestID(c)
+        ctx := c.Request.Context()
+        orderID := c.Param("id")
+
+        if orderID == "" </span><span class="cov8" title="1">{
+                c.JSON(http.StatusBadRequest, gin.H{"error": "Order ID is required"})
+                return
+        }</span>
+
+        <span class="cov8" title="1">var req UpdateStatusRequest
+        if err := c.ShouldBindJSON(&amp;req); err != nil </span><span class="cov8" title="1">{
+                c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid JSON format or missing required fields"})
+                return
+        }</span>
+
+        // Actualizar estado
+        <span class="cov8" title="1">newStatus := models.OrderStatus(req.Status)
+        order, err := h.service.UpdateOrderStatus(ctx, orderID, newStatus)
+        if err != nil </span><span class="cov0" title="0">{
+                h.logger.Error("Failed to update order status",
+                        // zap.Error(err),
+                        zap.String("orderId", orderID),
+                        zap.String("requestId", requestID),
+                )
+                c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error - Failed to update order status"})
+                return
+        }</span>
+
+        <span class="cov8" title="1">c.JSON(http.StatusOK, order)</span>
+}
+
+// Funciones auxiliares
+
+func getRequestID(c *gin.Context) string <span class="cov8" title="1">{
+        requestID := c.GetHeader("X-Request-ID")
+        if requestID == "" </span><span class="cov8" title="1">{
+                if id, exists := c.Get("requestId"); exists </span><span class="cov0" title="0">{
+                        requestID = id.(string)
+                }</span>
+        }
+        <span class="cov8" title="1">return requestID</span>
+}
+</pre>
+		
+		<pre class="file" id="file8" style="display: none">package kafka
+
+import (
+        "context"
+        "encoding/json"
+        "fmt"
+        "orders/internal/models"
+
+        "github.com/segmentio/kafka-go"
+        "go.uber.org/zap"
+)
+
+// Producer implementa el productor de eventos de Kafka
+type Producer struct {
+        writer *kafka.Writer
+        logger *zap.Logger
+        topic  string
+}
+
+// NewProducer crea una nueva instancia del productor
+func NewProducer(brokers []string, topic string, logger *zap.Logger) *Producer <span class="cov0" title="0">{
+        writer := &amp;kafka.Writer{
+                Addr:                   kafka.TCP(brokers...),
+                Topic:                  topic,
+                Balancer:               &amp;kafka.Hash{}, // Usar hash para particionar por key
+                AllowAutoTopicCreation: true,
+                RequiredAcks:           kafka.RequireOne, // At-least-once delivery
+                Compression:            kafka.Snappy,
+                MaxAttempts:            3,
+        }
+
+        return &amp;Producer{
+                writer: writer,
+                logger: logger,
+                topic:  topic,
+        }
+}</span>
+
+// PublishOrderEvent publica un evento de orden
+func (p *Producer) PublishOrderEvent(ctx context.Context, event *models.OrderEvent) error <span class="cov0" title="0">{
+        // Serializar evento a JSON
+        data, err := json.Marshal(event)
+        if err != nil </span><span class="cov0" title="0">{
+                p.logger.Error("Failed to marshal event",
+                        zap.Error(err),
+                        zap.String("eventId", event.EventID),
+                )
+                return fmt.Errorf("failed to marshal event: %w", err)
+        }</span>
+
+        // Crear mensaje de Kafka
+        // Usar orderID como key para mantener orden de eventos por orden
+        <span class="cov0" title="0">message := kafka.Message{
+                Key:   []byte(event.OrderID),
+                Value: data,
+                Headers: []kafka.Header{
+                        {Key: "event-type", Value: []byte(event.EventType)},
+                        {Key: "event-id", Value: []byte(event.EventID)},
+                },
+        }
+
+        // Publicar mensaje
+        err = p.writer.WriteMessages(ctx, message)
+        if err != nil </span><span class="cov0" title="0">{
+                p.logger.Error("Failed to publish event",
+                        zap.Error(err),
+                        zap.String("eventId", event.EventID),
+                        zap.String("orderId", event.OrderID),
+                        zap.String("topic", p.topic),
+                )
+                return fmt.Errorf("failed to publish event: %w", err)
+        }</span>
+
+        <span class="cov0" title="0">p.logger.Info("Event published successfully",
+                zap.String("eventId", event.EventID),
+                zap.String("eventType", string(event.EventType)),
+                zap.String("orderId", event.OrderID),
+                zap.String("topic", p.topic),
+        )
+
+        return nil</span>
+}
+
+// Close cierra el productor
+func (p *Producer) Close() error <span class="cov0" title="0">{
+        return p.writer.Close()
+}</span>
+</pre>
+		
+		<pre class="file" id="file9" style="display: none">package middlewares
+
+import (
+        "net/http"
+
+        "github.com/gin-gonic/gin"
+)
+
+// CORS configura CORS
+func CORS() gin.HandlerFunc <span class="cov0" title="0">{
+        return func(c *gin.Context) </span><span class="cov0" title="0">{
+                c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+                c.Writer.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS")
+                c.Writer.Header().Set("Access-Control-Allow-Headers", "Origin, Content-Type, Accept, Authorization, X-Request-ID")
+
+                if c.Request.Method == "OPTIONS" </span><span class="cov0" title="0">{
+                        c.AbortWithStatus(http.StatusNoContent)
+                        return
+                }</span>
+
+                <span class="cov0" title="0">c.Next()</span>
+        }
+}
+</pre>
+		
+		<pre class="file" id="file10" style="display: none">package middlewares
+
+import (
+        "net/http"
+        "time"
+
+        "github.com/gin-gonic/gin"
+        "go.uber.org/zap"
+)
+
+// ErrorHandler maneja errores globales
+func ErrorHandler(logger *zap.Logger) gin.HandlerFunc <span class="cov0" title="0">{
+        return func(c *gin.Context) </span><span class="cov0" title="0">{
+                c.Next()
+
+                // Obtener el primer error
+                err := c.Errors.ByType(gin.ErrorTypeAny).Last()
+                if err == nil </span><span class="cov0" title="0">{
+                        return
+                }</span>
+
+                <span class="cov0" title="0">code := http.StatusInternalServerError
+                if c.Writer.Status() != http.StatusOK </span><span class="cov0" title="0">{
+                        code = c.Writer.Status()
+                }</span>
+
+                <span class="cov0" title="0">requestID, exists := c.Get("requestId")
+                if !exists </span><span class="cov0" title="0">{
+                        requestID = "unknown"
+                }</span>
+
+                <span class="cov0" title="0">logger.Error("Request error",
+                        zap.Error(err.Err),
+                        zap.String("requestId", requestID.(string)),
+                        zap.String("path", c.Request.URL.Path),
+                        zap.Int("status", code),
+                )
+
+                c.JSON(code, gin.H{
+                        "error": gin.H{
+                                "code":      "INTERNAL_ERROR",
+                                "message":   "Internal server error",
+                                "requestId": requestID,
+                                "timestamp": time.Now(),
+                        },
+                })</span>
+        }
+}
+</pre>
+		
+		<pre class="file" id="file11" style="display: none">package middlewares
+
+import (
+        "time"
+
+        "github.com/gin-gonic/gin"
+        "go.uber.org/zap"
+)
+
+// Logger registra información de cada request
+func Logger(logger *zap.Logger) gin.HandlerFunc <span class="cov0" title="0">{
+        return func(c *gin.Context) </span><span class="cov0" title="0">{
+                start := time.Now()
+
+                requestID, _ := c.Get("requestId")
+                if requestID == nil </span><span class="cov0" title="0">{
+                        requestID = "unknown"
+                }</span>
+
+                <span class="cov0" title="0">c.Next() // Procesar request
+
+                duration := time.Since(start)
+
+                logger.Info("HTTP Request",
+                        zap.String("requestId", requestID.(string)),
+                        zap.String("method", c.Request.Method),
+                        zap.String("path", c.Request.URL.Path),
+                        zap.Int("status", c.Writer.Status()),
+                        zap.Duration("duration", duration),
+                        zap.String("ip", c.ClientIP()),
+                        zap.String("userAgent", c.Request.UserAgent()),
+                )</span>
+        }
+}
+</pre>
+		
+		<pre class="file" id="file12" style="display: none">package middlewares
+
+import (
+        "github.com/gin-gonic/gin"
+        "github.com/google/uuid"
+)
+
+func RequestID() gin.HandlerFunc <span class="cov0" title="0">{
+        return func(c *gin.Context) </span><span class="cov0" title="0">{
+                requestID := c.GetHeader("X-Request-ID")
+                if requestID == "" </span><span class="cov0" title="0">{
+                        requestID = uuid.New().String()
+                }</span>
+                <span class="cov0" title="0">c.Writer.Header().Set("X-Request-ID", requestID)
+                c.Set("requestId", requestID)
+                c.Next()</span>
+        }
+}
+</pre>
+		
+		<pre class="file" id="file13" style="display: none">package middlewares
+
+import "github.com/gin-gonic/gin"
+
+// Security agrega headers de seguridad
+func Security() gin.HandlerFunc <span class="cov0" title="0">{
+        return func(c *gin.Context) </span><span class="cov0" title="0">{
+                c.Writer.Header().Set("X-Content-Type-Options", "nosniff")
+                c.Writer.Header().Set("X-Frame-Options", "DENY")
+                c.Writer.Header().Set("X-XSS-Protection", "1; mode=block")
+                c.Writer.Header().Set("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
+                c.Next()
+        }</span>
+}
+</pre>
+		
+		<pre class="file" id="file14" style="display: none">package models
+
+import (
+        "time"
+
+        "github.com/google/uuid"
+)
+
+// EventType representa el tipo de evento
+type EventType string
+
+const (
+        EventOrderStatusChanged EventType = "ORDER_STATUS_CHANGED"
+)
+
+// OrderEvent representa un evento relacionado con una orden
+type OrderEvent struct {
+        EventID    string        `json:"eventId"`
+        EventType  EventType     `json:"eventType"`
+        OrderID    string        `json:"orderId"`
+        CustomerID string        `json:"customerId"`
+        OldStatus  OrderStatus   `json:"oldStatus"`
+        NewStatus  OrderStatus   `json:"newStatus"`
+        Timestamp  time.Time     `json:"timestamp"`
+        Metadata   EventMetadata `json:"metadata"`
+}
+
+// EventMetadata contiene metadatos adicionales del evento
+type EventMetadata struct {
+        ChangedBy string `json:"changedBy"`
+        Reason    string `json:"reason"`
+}
+
+// NewOrderStatusChangedEvent crea un nuevo evento de cambio de estado
+func NewOrderStatusChangedEvent(orderID, customerID string, oldStatus, newStatus OrderStatus) *OrderEvent <span class="cov0" title="0">{
+        return &amp;OrderEvent{
+                EventID:    uuid.New().String(),
+                EventType:  EventOrderStatusChanged,
+                OrderID:    orderID,
+                CustomerID: customerID,
+                OldStatus:  oldStatus,
+                NewStatus:  newStatus,
+                Timestamp:  time.Now(),
+                Metadata: EventMetadata{
+                        ChangedBy: "system",
+                        Reason:    "status_update",
+                },
+        }
+}</span>
+</pre>
+		
+		<pre class="file" id="file15" style="display: none">package models
+
+import (
+        "errors"
+        "time"
+
+        "github.com/google/uuid"
+)
+
+const (
+        StatusNew        OrderStatus = "NEW"
+        StatusInProgress OrderStatus = "IN_PROGRESS"
+        StatusDelivered  OrderStatus = "DELIVERED"
+        StatusCancelled  OrderStatus = "CANCELLED"
+)
+
+var (
+        ErrInvalidStatusTransition = errors.New("invalid status transition")
+        ErrOrderNotFound           = errors.New("order not found")
+        ErrInvalidOrderData        = errors.New("invalid order data")
+        ErrVersionConflict         = errors.New("version conflict - order was modified")
+)
+
+type OrderStatus string
+
+type Order struct {
+        ID          string      `json:"orderId" bson:"_id"`
+        CustomerID  string      `json:"customerId" bson:"customerId" validate:"required,uuid"`
+        Status      OrderStatus `json:"status" bson:"status"`
+        Items       []OrderItem `json:"items" bson:"items" validate:"required,min=1,max=100,dive"`
+        TotalAmount float64     `json:"totalAmount" bson:"totalAmount"`
+        Version     int         `json:"version" bson:"version"`
+        CreatedAt   time.Time   `json:"createdAt" bson:"createdAt"`
+        UpdatedAt   time.Time   `json:"updatedAt" bson:"updatedAt"`
+}
+
+// type OrderItem struct {
+//         ID        string
+//         ProductID string
+//         Quantity  int
+// }
+
+type OrderItem struct {
+        SKU      string  `json:"sku" bson:"sku" validate:"required,min=3,max=50"`
+        Quantity int     `json:"quantity" bson:"quantity" validate:"required,min=1,max=10000"`
+        Price    float64 `json:"price" bson:"price" validate:"required,gt=0"`
+}
+
+// IsValid verifica si el estado es válido
+func (s OrderStatus) IsValid() bool <span class="cov8" title="1">{
+        switch s </span>{
+        case StatusNew, StatusInProgress, StatusDelivered, StatusCancelled:<span class="cov8" title="1">
+                return true</span>
+        }
+        <span class="cov8" title="1">return false</span>
+}
+
+// Subtotal calcula el subtotal del ítem
+func (i OrderItem) Subtotal() float64 <span class="cov8" title="1">{
+        return float64(i.Quantity) * i.Price
+}</span>
+
+// NewOrder crea una nueva orden
+func NewOrder(customerID string, items []OrderItem) (*Order, error) <span class="cov8" title="1">{
+        if customerID == "" </span><span class="cov8" title="1">{
+                return nil, ErrInvalidOrderData
+        }</span>
+
+        <span class="cov8" title="1">if len(items) == 0 </span><span class="cov8" title="1">{
+                return nil, ErrInvalidOrderData
+        }</span>
+
+        // Validar UUID del cliente
+        <span class="cov8" title="1">if _, err := uuid.Parse(customerID); err != nil </span><span class="cov8" title="1">{
+                return nil, ErrInvalidOrderData
+        }</span>
+
+        <span class="cov8" title="1">totalAmount := 0.0
+        for _, item := range items </span><span class="cov8" title="1">{
+                if item.Quantity &lt;= 0 || item.Price &lt;= 0 </span><span class="cov8" title="1">{
+                        return nil, ErrInvalidOrderData
+                }</span>
+                <span class="cov8" title="1">totalAmount += item.Subtotal()</span>
+        }
+
+        <span class="cov8" title="1">now := time.Now()
+        return &amp;Order{
+                ID:          uuid.New().String(),
+                CustomerID:  customerID,
+                Status:      StatusNew,
+                Items:       items,
+                TotalAmount: totalAmount,
+                Version:     1,
+                CreatedAt:   now,
+                UpdatedAt:   now,
+        }, nil</span>
+}
+
+func (o *Order) CanTransitionTo(newStatus OrderStatus) bool <span class="cov8" title="1">{
+        switch o.Status </span>{
+        case StatusNew:<span class="cov8" title="1">
+                return newStatus == StatusInProgress || newStatus == StatusCancelled</span>
+        case StatusInProgress:<span class="cov8" title="1">
+                return newStatus == StatusDelivered || newStatus == StatusCancelled</span>
+        case StatusDelivered, StatusCancelled:<span class="cov8" title="1">
+                return false</span> // Estados finales
+        }
+        <span class="cov0" title="0">return false</span>
+}
+
+// UpdateStatus actualiza el estado de la orden si la transición es válida
+func (o *Order) UpdateStatus(newStatus OrderStatus) error <span class="cov8" title="1">{
+        if !newStatus.IsValid() </span><span class="cov8" title="1">{
+                return ErrInvalidOrderData
+        }</span>
+
+        <span class="cov8" title="1">if !o.CanTransitionTo(newStatus) </span><span class="cov8" title="1">{
+                return ErrInvalidStatusTransition
+        }</span>
+
+        <span class="cov8" title="1">o.Status = newStatus
+        o.UpdatedAt = time.Now()
+        o.Version++
+
+        return nil</span>
+}
+
+// CalculateTotalAmount recalcula el monto total
+func (o *Order) CalculateTotalAmount() <span class="cov8" title="1">{
+        total := 0.0
+        for _, item := range o.Items </span><span class="cov8" title="1">{
+                total += item.Subtotal()
+        }</span>
+        <span class="cov8" title="1">o.TotalAmount = total</span>
+}
+</pre>
+		
+		<pre class="file" id="file16" style="display: none">package mongodb
+
+import (
+        "context"
+        "errors"
+        "net/http"
+        "orders/internal/models"
+        "orders/internal/repositories"
+
+        "go.mongodb.org/mongo-driver/bson"
+        "go.mongodb.org/mongo-driver/mongo"
+        "go.mongodb.org/mongo-driver/mongo/options"
+)
+
+const (
+        ordersCollection = "orders"
+)
+
+// OrderRepository implementa el repositorio de órdenes para MongoDB
+type OrderRepository struct {
+        db         *mongo.Database
+        collection *mongo.Collection
+}
+
+type Repository interface {
+        Create(ctx context.Context, order *models.Order) *repositories.RepositoryError
+        FindByID(ctx context.Context, id string) (*models.Order, *repositories.RepositoryError)
+        FindWithFilters(ctx context.Context, filters map[string]interface{}, page, limit int) ([]*models.Order, int64, *repositories.RepositoryError)
+        Update(ctx context.Context, order *models.Order) *repositories.RepositoryError
+}
+
+// NewOrderRepository crea una nueva instancia del repositorio
+func NewOrderRepository(db *mongo.Database) *OrderRepository <span class="cov0" title="0">{
+        return &amp;OrderRepository{
+                db:         db,
+                collection: db.Collection(ordersCollection),
+        }
+}</span>
+
+// Create inserta una nueva orden
+func (r *OrderRepository) Create(ctx context.Context, order *models.Order) *repositories.RepositoryError <span class="cov0" title="0">{
+        _, err := r.collection.InsertOne(ctx, order)
+        if err != nil </span><span class="cov0" title="0">{
+                if mongo.IsDuplicateKeyError(err) </span><span class="cov0" title="0">{
+                        return &amp;repositories.RepositoryError{
+                                StatusCode: http.StatusConflict,
+                                Cause:      "duplicate key error",
+                                Message:    "Order with the same ID already exists",
+                        }
+                }</span>
+                <span class="cov0" title="0">return &amp;repositories.RepositoryError{
+                        StatusCode: http.StatusInternalServerError,
+                        Cause:      err.Error(),
+                        Message:    "Failed to create order",
+                }</span>
+        }
+        <span class="cov0" title="0">return nil</span>
+}
+
+// FindByID busca una orden por ID
+func (r *OrderRepository) FindByID(ctx context.Context, id string) (*models.Order, *repositories.RepositoryError) <span class="cov0" title="0">{
+        var order models.Order
+        err := r.collection.FindOne(ctx, bson.M{"_id": id}).Decode(&amp;order)
+        if err != nil </span><span class="cov0" title="0">{
+                if errors.Is(err, mongo.ErrNoDocuments) </span><span class="cov0" title="0">{
+                        return nil, &amp;repositories.RepositoryError{
+                                StatusCode: http.StatusNotFound,
+                                Cause:      "order not found",
+                                Message:    "Order not found",
+                        }
+                }</span>
+                <span class="cov0" title="0">return nil, &amp;repositories.RepositoryError{
+                        StatusCode: http.StatusInternalServerError,
+                        Cause:      err.Error(),
+                        Message:    "Failed to find order",
+                }</span>
+        }
+        <span class="cov0" title="0">return &amp;order, nil</span>
+}
+
+// FindWithFilters busca órdenes con filtros y paginación
+func (r *OrderRepository) FindWithFilters(ctx context.Context, filters map[string]interface{}, page, limit int) ([]*models.Order, int64, *repositories.RepositoryError) <span class="cov0" title="0">{
+        // Construir filtro
+        filter := bson.M{}
+        if status, ok := filters["status"].(string); ok &amp;&amp; status != "" </span><span class="cov0" title="0">{
+                filter["status"] = status
+        }</span>
+        <span class="cov0" title="0">if customerID, ok := filters["customerId"].(string); ok &amp;&amp; customerID != "" </span><span class="cov0" title="0">{
+                filter["customerId"] = customerID
+        }</span>
+
+        // Contar total
+        <span class="cov0" title="0">total, err := r.collection.CountDocuments(ctx, filter)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, 0, &amp;repositories.RepositoryError{
+                        StatusCode: http.StatusInternalServerError,
+                        Cause:      err.Error(),
+                        Message:    "Failed to count orders",
+                }
+        }</span>
+
+        // Calcular skip
+        <span class="cov0" title="0">skip := (page - 1) * limit
+
+        // Opciones de búsqueda
+        opts := options.Find().
+                SetSort(bson.D{{Key: "createdAt", Value: -1}}).
+                SetLimit(int64(limit)).
+                SetSkip(int64(skip))
+
+        cursor, err := r.collection.Find(ctx, filter, opts)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, 0, &amp;repositories.RepositoryError{
+                        StatusCode: http.StatusInternalServerError,
+                        Cause:      err.Error(),
+                        Message:    "Failed to find orders",
+                }
+        }</span>
+        <span class="cov0" title="0">defer cursor.Close(ctx)
+
+        var orders []*models.Order
+        if err = cursor.All(ctx, &amp;orders); err != nil </span><span class="cov0" title="0">{
+                return nil, 0, &amp;repositories.RepositoryError{
+                        StatusCode: http.StatusInternalServerError,
+                        Cause:      err.Error(),
+                        Message:    "Failed to find orders",
+                }
+        }</span>
+
+        <span class="cov0" title="0">return orders, total, nil</span>
+}
+
+// Update actualiza una orden con control de concurrencia optimista
+func (r *OrderRepository) Update(ctx context.Context, order *models.Order) *repositories.RepositoryError <span class="cov0" title="0">{
+        filter := bson.M{
+                "_id":     order.ID,
+                "version": order.Version - 1, // Verificar versión anterior
+        }
+
+        update := bson.M{
+                "$set": bson.M{
+                        "status":     order.Status,
+                        "updated_at": order.UpdatedAt,
+                        "version":    order.Version,
+                },
+        }
+
+        result, err := r.collection.UpdateOne(ctx, filter, update)
+        if err != nil </span><span class="cov0" title="0">{
+                return &amp;repositories.RepositoryError{
+                        StatusCode: http.StatusInternalServerError,
+                        Cause:      err.Error(),
+                        Message:    "Failed to update order",
+                }
+        }</span>
+
+        <span class="cov0" title="0">if result.MatchedCount == 0 </span><span class="cov0" title="0">{
+                // Verificar si existe la orden
+                _, err := r.FindByID(ctx, order.ID)
+                if err != nil </span><span class="cov0" title="0">{
+                        return &amp;repositories.RepositoryError{
+                                StatusCode: http.StatusNotFound,
+                                Cause:      "order not found",
+                                Message:    "Order not found",
+                        }
+                }</span>
+                // Existe pero versión no coincide
+                <span class="cov0" title="0">return &amp;repositories.RepositoryError{
+                        StatusCode: http.StatusConflict,
+                        Cause:      "version conflict",
+                        Message:    "Order was modified by another process",
+                }</span>
+        }
+
+        <span class="cov0" title="0">return nil</span>
+}
+
+// CreateIndexes crea los índices necesarios
+func (r *OrderRepository) CreateIndexes(ctx context.Context) error <span class="cov0" title="0">{
+        indexes := []mongo.IndexModel{
+                {
+                        Keys: bson.D{
+                                {Key: "status", Value: 1},
+                                {Key: "customerId", Value: 1},
+                                {Key: "createdAt", Value: -1},
+                        },
+                },
+                {
+                        Keys: bson.D{
+                                {Key: "customerId", Value: 1},
+                                {Key: "createdAt", Value: -1},
+                        },
+                },
+        }
+
+        _, err := r.collection.Indexes().CreateMany(ctx, indexes)
+        return err
+}</span>
+</pre>
+		
+		<pre class="file" id="file17" style="display: none">package redis
+
+import (
+        "context"
+        "encoding/json"
+        "fmt"
+        "net/http"
+        "time"
+
+        "orders/internal/models"
+        "orders/internal/repositories"
+
+        "github.com/redis/go-redis/v9"
+)
+
+const (
+        orderKeyPrefix = "order:"
+)
+
+type Repository interface {
+        GetOrder(ctx context.Context, orderID string) (*models.Order, *repositories.RepositoryError)
+        SetOrder(ctx context.Context, order *models.Order) *repositories.RepositoryError
+        InvalidateOrder(ctx context.Context, orderID string) *repositories.RepositoryError
+}
+
+// CacheRepository implementa el repositorio de caché con Redis
+type CacheRepository struct {
+        client     *redis.Client
+        defaultTTL time.Duration
+}
+
+// NewCacheRepository crea una nueva instancia del repositorio de caché
+func NewCacheRepository(client *redis.Client, defaultTTL time.Duration) *CacheRepository <span class="cov0" title="0">{
+        return &amp;CacheRepository{
+                client:     client,
+                defaultTTL: defaultTTL,
+        }
+}</span>
+
+// GetOrder obtiene una orden del caché
+func (r *CacheRepository) GetOrder(ctx context.Context, orderID string) (*models.Order, *repositories.RepositoryError) <span class="cov0" title="0">{
+        key := r.orderKey(orderID)
+
+        data, err := r.client.Get(ctx, key).Bytes()
+        if err != nil </span><span class="cov0" title="0">{
+                if err == redis.Nil </span><span class="cov0" title="0">{
+                        return nil, nil // No existe en caché (cache miss)
+                }</span>
+                <span class="cov0" title="0">return nil, &amp;repositories.RepositoryError{
+                        StatusCode: http.StatusNotFound,
+                        Cause:      "order not found",
+                        Message:    fmt.Sprintf("Order with ID %s not found", orderID),
+                }</span>
+        }
+
+        <span class="cov0" title="0">var order models.Order
+        if err := json.Unmarshal(data, &amp;order); err != nil </span><span class="cov0" title="0">{
+                return nil, &amp;repositories.RepositoryError{
+                        StatusCode: http.StatusInternalServerError,
+                        Cause:      "failed to unmarshal order",
+                        Message:    fmt.Sprintf("Failed to unmarshal order with ID %s", orderID),
+                }
+        }</span>
+
+        <span class="cov0" title="0">return &amp;order, nil</span>
+}
+
+// SetOrder guarda una orden en el caché
+func (r *CacheRepository) SetOrder(ctx context.Context, order *models.Order) *repositories.RepositoryError <span class="cov0" title="0">{
+        key := r.orderKey(order.ID)
+
+        data, err := json.Marshal(order)
+        if err != nil </span><span class="cov0" title="0">{
+                return &amp;repositories.RepositoryError{
+                        StatusCode: http.StatusInternalServerError,
+                        Cause:      "failed to marshal order",
+                        Message:    fmt.Sprintf("Failed to marshal order with ID %s", order.ID),
+                }
+        }</span>
+
+        <span class="cov0" title="0">status := r.client.Set(ctx, key, data, r.defaultTTL)
+        if err := status.Err(); err != nil </span><span class="cov0" title="0">{
+                return &amp;repositories.RepositoryError{
+                        StatusCode: http.StatusInternalServerError,
+                        Cause:      "failed to set order in cache",
+                        Message:    err.Error(),
+                }
+        }</span>
+
+        // Si todo salió bien, no hay error
+        <span class="cov0" title="0">return nil</span>
+}
+
+// InvalidateOrder invalida (elimina) una orden del caché
+func (r *CacheRepository) InvalidateOrder(ctx context.Context, orderID string) *repositories.RepositoryError <span class="cov0" title="0">{
+        key := r.orderKey(orderID)
+        if err := r.client.Del(ctx, key).Err(); err != nil </span><span class="cov0" title="0">{
+                return &amp;repositories.RepositoryError{
+                        StatusCode: http.StatusInternalServerError,
+                        Cause:      "failed to delete order from cache",
+                        Message:    err.Error(),
+                }
+        }</span>
+
+        // Si todo salió bien, no hay error
+        <span class="cov0" title="0">return nil</span>
+}
+
+// Ping verifica la conexión con Redis
+func (r *CacheRepository) Ping(ctx context.Context) *repositories.RepositoryError <span class="cov0" title="0">{
+        if err := r.client.Ping(ctx).Err(); err != nil </span><span class="cov0" title="0">{
+                return &amp;repositories.RepositoryError{
+                        StatusCode: http.StatusInternalServerError,
+                        Cause:      "failed to ping Redis",
+                        Message:    err.Error(),
+                }
+        }</span>
+        <span class="cov0" title="0">return nil</span>
+}
+
+// orderKey genera la key de Redis para una orden
+func (r *CacheRepository) orderKey(orderID string) string <span class="cov0" title="0">{
+        return fmt.Sprintf("%s%s", orderKeyPrefix, orderID)
+}</span>
+</pre>
+		
+		<pre class="file" id="file18" style="display: none">package repositories
+
+import "fmt"
+
+type RepositoryError struct {
+        StatusCode int    `json:"status_code"`
+        Cause      string `json:"cause"`
+        Message    string `json:"message"`
+}
+
+func (e *RepositoryError) Error() string <span class="cov0" title="0">{
+        return fmt.Sprintf("status=%d, message=%s", e.StatusCode, e.Message)
+}</span>
+</pre>
+		
+		<pre class="file" id="file19" style="display: none">package services
+
+import (
+        "context"
+        "fmt"
+        "net/http"
+        "orders/internal/models"
+        "orders/internal/repositories"
+        "orders/internal/repositories/mongodb"
+        "orders/internal/repositories/redis"
+
+        // "orders/internal/repositories/redis"
+
+        "go.uber.org/zap"
+)
+
+type ServiceError struct {
+        Status            int           `json:"status"`
+        Message           string        `json:"message"`
+        Cause             []interface{} `json:"cause"`
+        StatusDescription string        `json:"status_description,omitempty"`
+}
+
+func (e *ServiceError) Error() string <span class="cov0" title="0">{
+        return fmt.Sprintf("status=%d, message=%s", e.Status, e.Message)
+}</span>
+
+type OrderService interface {
+        CreateOrder(ctx context.Context, customerID string, items []models.OrderItem) (*models.Order, *ServiceError)
+        GetOrderByID(ctx context.Context, orderID string) (*models.Order, *ServiceError)
+        UpdateOrderStatus(ctx context.Context, orderID string, newStatus models.OrderStatus) (*models.Order, *ServiceError)
+        ListOrders(ctx context.Context, status, customerID string, page, limit int) ([]*models.Order, int64, *ServiceError)
+}
+
+// CacheRepository define la interfaz del repositorio de caché
+type CacheRepository interface {
+        GetOrder(ctx context.Context, orderID string) (*models.Order, *repositories.RepositoryError)
+        SetOrder(ctx context.Context, order *models.Order) *repositories.RepositoryError
+        InvalidateOrder(ctx context.Context, orderID string) *repositories.RepositoryError
+}
+
+// EventPublisher define la interfaz del publicador de eventos
+type EventPublisher interface {
+        PublishOrderEvent(ctx context.Context, event *models.OrderEvent) error
+}
+
+type order struct {
+        orderRepo      mongodb.Repository
+        cacheRepo      redis.Repository
+        eventPublisher EventPublisher
+        logger         *zap.Logger
+}
+
+func NewOrderService(orderRepo mongodb.Repository, cacheRepo redis.Repository, eventPublisher EventPublisher, logger *zap.Logger) OrderService <span class="cov8" title="1">{
+        return &amp;order{
+                orderRepo:      orderRepo,
+                cacheRepo:      cacheRepo,
+                eventPublisher: eventPublisher,
+                logger:         logger,
+        }
+}</span>
+
+// CreateOrder crea una nueva orden
+func (s *order) CreateOrder(ctx context.Context, customerID string, items []models.OrderItem) (*models.Order, *ServiceError) <span class="cov8" title="1">{
+        s.logger.Debug("Creating order",
+                zap.String("customerId", customerID),
+                zap.Int("itemsCount", len(items)),
+        )
+
+        // Crear orden en dominio
+        order, err := models.NewOrder(customerID, items)
+        if err != nil </span><span class="cov8" title="1">{
+                s.logger.Error("Failed to create order entity",
+                        zap.Error(err),
+                        zap.String("customerId", customerID),
+                )
+                return nil, &amp;ServiceError{
+                        Status:  http.StatusBadRequest,
+                        Message: "Invalid order data",
+                        Cause:   []interface{}{err.Error()},
+                }
+        }</span>
+
+        // Persistir en MongoDB
+        <span class="cov8" title="1">if err := s.orderRepo.Create(ctx, order); err != nil </span><span class="cov0" title="0">{
+                s.logger.Error("Failed to persist order",
+                        // zap.Error(err),
+                        zap.String("orderId", order.ID),
+                )
+                return nil, &amp;ServiceError{
+                        Status:  err.StatusCode,
+                        Message: err.Message,
+                        Cause:   []interface{}{err.Cause},
+                }
+        }</span>
+
+        <span class="cov8" title="1">s.logger.Info("Order created successfully",
+                zap.String("orderId", order.ID),
+                zap.String("customerId", order.CustomerID),
+                // zap.Float64("totalAmount", order.TotalAmount),
+        )
+
+        return order, nil</span>
+}
+
+func (s *order) GetOrderByID(ctx context.Context, orderID string) (*models.Order, *ServiceError) <span class="cov8" title="1">{
+        s.logger.Debug("Getting order by ID",
+                zap.String("orderId", orderID),
+        )
+
+        // Intentar obtener del caché
+        order, err := s.cacheRepo.GetOrder(ctx, orderID)
+        if err != nil </span><span class="cov0" title="0">{
+                s.logger.Warn("Cache error, falling back to database",
+                        // zap.Error(err),
+                        zap.String("orderId", orderID),
+                )
+        }</span> else<span class="cov8" title="1"> if order != nil </span><span class="cov8" title="1">{
+                s.logger.Debug("Order found in cache",
+                        zap.String("orderId", orderID),
+                )
+                return order, nil
+        }</span>
+
+        // Si no está en caché, buscar en MongoDB
+        <span class="cov8" title="1">order, err = s.orderRepo.FindByID(ctx, orderID)
+        if err != nil </span><span class="cov8" title="1">{
+                s.logger.Error("Failed to get order from database",
+                        zap.String("Message", err.Message),
+                        zap.Int("StatusCode", err.StatusCode),
+                )
+                return nil, &amp;ServiceError{
+                        Status:  err.StatusCode,
+                        Message: err.Message,
+                        Cause:   []interface{}{err.Cause},
+                }
+        }</span>
+
+        // Guardar en caché para futuras consultas
+        <span class="cov8" title="1">if err := s.cacheRepo.SetOrder(ctx, order); err != nil </span><span class="cov0" title="0">{
+                s.logger.Warn("Failed to cache order",
+                        zap.String("orderId", orderID),
+                )
+                // No retornar error, el caché es secundario
+        }</span>
+
+        <span class="cov8" title="1">s.logger.Debug("Order retrieved from database",
+                zap.String("orderId", orderID),
+        )
+
+        return order, nil</span>
+
+}
+
+func (s *order) ListOrders(ctx context.Context, status, customerID string, page, limit int) ([]*models.Order, int64, *ServiceError) <span class="cov8" title="1">{
+        s.logger.Debug("Listing orders",
+                zap.String("status", status),
+                zap.String("customerId", customerID),
+                zap.Int("page", page),
+                zap.Int("limit", limit),
+        )
+
+        filters := make(map[string]interface{})
+        if status != "" </span><span class="cov8" title="1">{
+                filters["status"] = status
+        }</span>
+        <span class="cov8" title="1">if customerID != "" </span><span class="cov8" title="1">{
+                filters["customerId"] = customerID
+        }</span>
+
+        <span class="cov8" title="1">orders, total, err := s.orderRepo.FindWithFilters(ctx, filters, page, limit)
+        if err != nil </span><span class="cov8" title="1">{
+                s.logger.Error("Failed to list orders",
+                        zap.String("Message", err.Message),
+                        zap.Int("StatusCode", err.StatusCode),
+                        zap.String("Cause", err.Cause),
+                )
+                return nil, 0, &amp;ServiceError{
+                        Status:  err.StatusCode,
+                        Message: err.Message,
+                        Cause:   []interface{}{err.Cause},
+                }
+        }</span>
+
+        <span class="cov8" title="1">s.logger.Debug("Orders listed successfully",
+                zap.Int("count", len(orders)),
+                zap.Int64("total", total),
+        )
+
+        return orders, total, nil</span>
+}
+
+// UpdateOrderStatus actualiza el estado de una orden
+func (s *order) UpdateOrderStatus(ctx context.Context, orderID string, newStatus models.OrderStatus) (*models.Order, *ServiceError) <span class="cov8" title="1">{
+        s.logger.Debug("Updating order status",
+                zap.String("orderId", orderID),
+                zap.String("newStatus", string(newStatus)),
+        )
+
+        // Obtener orden actual
+        order, err := s.orderRepo.FindByID(ctx, orderID)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, &amp;ServiceError{
+                        Status:  err.StatusCode,
+                        Message: err.Message,
+                        Cause:   []interface{}{err.Cause},
+                }
+        }</span>
+
+        <span class="cov8" title="1">oldStatus := order.Status
+
+        // Actualizar estado en dominio (con validación de transición)
+        if err := order.UpdateStatus(newStatus); err != nil </span><span class="cov8" title="1">{
+                s.logger.Warn("Invalid status transition",
+                        zap.Error(err),
+                        zap.String("orderId", orderID),
+                        zap.String("oldStatus", string(oldStatus)),
+                        zap.String("newStatus", string(newStatus)),
+                )
+                return nil, &amp;ServiceError{
+                        Status:  http.StatusBadRequest,
+                        Message: "Invalid status transition",
+                        Cause:   []interface{}{err.Error()},
+                }
+        }</span>
+
+        // Persistir cambios en MongoDB
+        <span class="cov8" title="1">if err := s.orderRepo.Update(ctx, order); err != nil </span><span class="cov8" title="1">{
+                s.logger.Error("Failed to update order",
+                        zap.String("orderId", orderID),
+                )
+                return nil, &amp;ServiceError{
+                        Status:  err.StatusCode,
+                        Message: err.Message,
+                        Cause:   []interface{}{err.Cause},
+                }
+        }</span>
+
+        // Invalidar caché
+        <span class="cov8" title="1">if err := s.cacheRepo.InvalidateOrder(ctx, orderID); err != nil </span><span class="cov0" title="0">{
+                s.logger.Warn("Failed to invalidate cache",
+                        zap.String("orderId", orderID),
+                )
+                // No retornar error, continuar con el flujo
+        }</span>
+
+        // Publicar evento en Kafka
+        <span class="cov8" title="1">event := models.NewOrderStatusChangedEvent(order.ID, order.CustomerID, oldStatus, newStatus)
+        if err := s.eventPublisher.PublishOrderEvent(ctx, event); err != nil </span><span class="cov0" title="0">{
+                s.logger.Error("Failed to publish event",
+                        zap.Error(err),
+                        zap.String("orderId", orderID),
+                        zap.String("eventId", event.EventID),
+                )
+                // No retornar error - el cambio ya se persistió
+                // En producción, esto debería ir a un sistema de retry/DLQ
+        }</span>
+
+        <span class="cov8" title="1">s.logger.Info("Order status updated successfully",
+                zap.String("orderId", orderID),
+                zap.String("oldStatus", string(oldStatus)),
+                zap.String("newStatus", string(newStatus)),
+        )
+
+        return order, nil</span>
+}
+</pre>
+		
+		<pre class="file" id="file20" style="display: none">package logger
+
+import (
+        "fmt"
+        "strings"
+
+        "go.uber.org/zap"
+        "go.uber.org/zap/zapcore"
+)
+
+var log *zap.Logger
+
+// Init inicializa el logger global con el nivel y formato dados
+func Init(level, format string) error <span class="cov0" title="0">{
+        var err error
+
+        // Determinar el nivel de log
+        var zapLevel zapcore.Level
+        switch strings.ToLower(level) </span>{
+        case "debug":<span class="cov0" title="0">
+                zapLevel = zapcore.DebugLevel</span>
+        case "info":<span class="cov0" title="0">
+                zapLevel = zapcore.InfoLevel</span>
+        case "warn", "warning":<span class="cov0" title="0">
+                zapLevel = zapcore.WarnLevel</span>
+        case "error":<span class="cov0" title="0">
+                zapLevel = zapcore.ErrorLevel</span>
+        default:<span class="cov0" title="0">
+                zapLevel = zapcore.InfoLevel</span>
+        }
+
+        // Configuración base
+        <span class="cov0" title="0">cfg := zap.Config{
+                Level:            zap.NewAtomicLevelAt(zapLevel),
+                Development:      zapLevel == zapcore.DebugLevel,
+                Encoding:         strings.ToLower(format), // "json" o "console"
+                OutputPaths:      []string{"stdout"},
+                ErrorOutputPaths: []string{"stderr"},
+                EncoderConfig: zapcore.EncoderConfig{
+                        TimeKey:        "timestamp",
+                        LevelKey:       "level",
+                        NameKey:        "logger",
+                        CallerKey:      "caller",
+                        MessageKey:     "message",
+                        StacktraceKey:  "stacktrace",
+                        LineEnding:     zapcore.DefaultLineEnding,
+                        EncodeLevel:    zapcore.CapitalColorLevelEncoder,
+                        EncodeTime:     zapcore.ISO8601TimeEncoder,
+                        EncodeDuration: zapcore.StringDurationEncoder,
+                        EncodeCaller:   zapcore.ShortCallerEncoder,
+                },
+        }
+
+        // Crear logger
+        log, err = cfg.Build()
+        if err != nil </span><span class="cov0" title="0">{
+                return fmt.Errorf("failed to initialize logger: %w", err)
+        }</span>
+
+        <span class="cov0" title="0">zap.ReplaceGlobals(log)
+        return nil</span>
+}
+
+// Get retorna una instancia del logger actual
+func Get() *zap.Logger <span class="cov0" title="0">{
+        if log == nil </span><span class="cov0" title="0">{
+                panic("logger not initialized — call logger.Init() first")</span>
+        }
+        <span class="cov0" title="0">return log</span>
+}
+
+// Sync limpia los buffers y cierra correctamente el logger
+func Sync() <span class="cov0" title="0">{
+        if log != nil </span><span class="cov0" title="0">{
+                _ = log.Sync()
+        }</span>
+}
+</pre>
+		
+		</div>
+	</body>
+	<script>
+	(function() {
+		var files = document.getElementById('files');
+		var visible;
+		files.addEventListener('change', onChange, false);
+		function select(part) {
+			if (visible)
+				visible.style.display = 'none';
+			visible = document.getElementById(part);
+			if (!visible)
+				return;
+			files.value = part;
+			visible.style.display = 'block';
+			location.hash = part;
+		}
+		function onChange() {
+			select(files.value);
+			window.scrollTo(0, 0);
+		}
+		if (location.hash != "") {
+			select(location.hash.substr(1));
+		}
+		if (!visible) {
+			select("file0");
+		}
+	})();
+	</script>
+</html>
