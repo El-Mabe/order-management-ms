@@ -12,8 +12,12 @@ import (
 	"go.uber.org/zap"
 )
 
-// OrderHandlerGin maneja los endpoints relacionados con órdenes usando Gin
-type OrderHandlerGin struct {
+type ErrorResponse struct {
+	Code    int    `json:"code"`    // Código HTTP o interno
+	Message string `json:"message"` // Mensaje de error
+}
+
+type OrderHandler struct {
 	service         services.OrderService
 	validator       *validator.Validate
 	logger          *zap.Logger
@@ -21,10 +25,8 @@ type OrderHandlerGin struct {
 	defaultPageSize int
 }
 
-// NewOrderHandlerGin crea una nueva instancia del handler con Gin
-// func NewOrderHandler(service services.OrderService, logger *zap.Logger) *OrderHandlerGin {
-func NewOrderHandler(service services.OrderService, logger *zap.Logger, defaultPageSize, maxPageSize int) *OrderHandlerGin {
-	return &OrderHandlerGin{
+func NewOrderHandler(service services.OrderService, logger *zap.Logger, defaultPageSize, maxPageSize int) *OrderHandler {
+	return &OrderHandler{
 		service:         service,
 		validator:       validator.New(),
 		logger:          logger,
@@ -33,18 +35,15 @@ func NewOrderHandler(service services.OrderService, logger *zap.Logger, defaultP
 	}
 }
 
-// CreateOrderRequest representa la solicitud de creación de orden
 type CreateOrderRequest struct {
 	CustomerID string             `json:"customerId" binding:"required,uuid"`
 	Items      []models.OrderItem `json:"items" binding:"required,min=1,max=100,dive"`
 }
 
-// UpdateStatusRequest representa la solicitud de actualización de estado
 type UpdateStatusRequest struct {
 	Status string `json:"status" binding:"required,oneof=NEW IN_PROGRESS DELIVERED CANCELLED"`
 }
 
-// PaginationResponse representa la información de paginación
 type PaginationResponse struct {
 	Page       int   `json:"page"`
 	Limit      int   `json:"limit"`
@@ -52,47 +51,36 @@ type PaginationResponse struct {
 	TotalPages int   `json:"totalPages"`
 }
 
-// ListOrdersResponse representa la respuesta de listado de órdenes
 type ListOrdersResponse struct {
 	Orders     []*models.Order    `json:"orders"`
 	Pagination PaginationResponse `json:"pagination"`
 }
 
 // CreateOrder godoc
-// @Summary Crear nueva orden
-// @Description Crea una nueva orden de entrega
+// @Summary Create a new order
+// @Description Creates a new delivery order
 // @Tags orders
 // @Accept json
 // @Produce json
-// @Param order body CreateOrderRequest true "Datos de la orden"
+// @Param order body CreateOrderRequest true "Order data"
 // @Success 201 {object} models.Order
-// @Failure 400 {object} apierrors.ErrorResponse
-// @Failure 500 {object} apierrors.ErrorResponse
-// @Router /api/v1/orders [post]
-func (h *OrderHandlerGin) CreateOrder(c *gin.Context) {
+// @Failure 400 {object} ErrorResponse
+// @Failure 500 {object} ErrorResponse
+// @Router /api/orders [post]
+func (h *OrderHandler) CreateOrder(c *gin.Context) {
 	requestID := getRequestID(c)
 	ctx := c.Request.Context()
 
 	var req CreateOrderRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		h.logger.Warn("Invalid request body",
-			zap.Error(err),
-			zap.String("requestId", requestID),
-		)
-
-		// details := h.extractValidationErrors(err)
-		// apiErr := apierrors.NewValidationError(requestID, details)
-		// c.JSON(http.StatusBadRequest, gin.H{"error": apiErr})
+		h.logger.Warn("Invalid request body", zap.Error(err), zap.String("requestId", requestID))
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
 		return
 	}
 
-	// Crear orden
 	order, err := h.service.CreateOrder(ctx, req.CustomerID, req.Items)
 	if err != nil {
-		h.logger.Error("Failed to create order",
-			zap.String("requestId", requestID),
-		)
+		h.logger.Error("Failed to create order", zap.String("requestId", requestID))
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error"})
 		return
 	}
@@ -101,34 +89,29 @@ func (h *OrderHandlerGin) CreateOrder(c *gin.Context) {
 }
 
 // GetOrder godoc
-// @Summary Obtener orden por ID
-// @Description Obtiene una orden específica por su ID
+// @Summary Get order by ID
+// @Description Retrieves a specific order by its ID
 // @Tags orders
 // @Produce json
 // @Param id path string true "Order ID"
 // @Success 200 {object} models.Order
-// @Failure 404 {object} apierrors.ErrorResponse
-// @Failure 500 {object} apierrors.ErrorResponse
-// @Router /api/v1/orders/{id} [get]
-func (h *OrderHandlerGin) GetOrder(c *gin.Context) {
+// @Failure 404 {object} ErrorResponse
+// @Failure 500 {object} ErrorResponse
+// @Router /api/orders/{id} [get]
+func (h *OrderHandler) GetOrder(c *gin.Context) {
 	requestID := getRequestID(c)
 	ctx := c.Request.Context()
 	orderID := c.Param("id")
 
 	if orderID == "" {
-
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Order ID is required"})
 		return
 	}
 
 	order, err := h.service.GetOrderByID(ctx, orderID)
 	if err != nil {
-		h.logger.Error("Failed to get order",
-			// zap.Error(err),
-			zap.String("orderId", orderID),
-			zap.String("requestId", requestID),
-		)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error - Failed to get order "})
+		h.logger.Error("Failed to get order", zap.Error(err), zap.String("orderId", orderID), zap.String("requestId", requestID))
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error - Failed to get order"})
 		return
 	}
 
@@ -136,23 +119,22 @@ func (h *OrderHandlerGin) GetOrder(c *gin.Context) {
 }
 
 // ListOrders godoc
-// @Summary Listar órdenes
-// @Description Lista órdenes con filtros opcionales y paginación
+// @Summary List orders
+// @Description Lists orders with optional filters and pagination
 // @Tags orders
 // @Produce json
-// @Param status query string false "Filtrar por estado"
-// @Param customerId query string false "Filtrar por ID de cliente"
-// @Param page query int false "Número de página" default(1)
-// @Param limit query int false "Resultados por página" default(10)
+// @Param status query string false "Filter by status"
+// @Param customerId query string false "Filter by customer ID"
+// @Param page query int false "Page number" default(1)
+// @Param limit query int false "Results per page" default(10)
 // @Success 200 {object} ListOrdersResponse
-// @Failure 400 {object} apierrors.ErrorResponse
-// @Failure 500 {object} apierrors.ErrorResponse
-// @Router /api/v1/orders [get]
-func (h *OrderHandlerGin) ListOrders(c *gin.Context) {
+// @Failure 400 {object} ErrorResponse
+// @Failure 500 {object} ErrorResponse
+// @Router /api/orders [get]
+func (h *OrderHandler) ListOrders(c *gin.Context) {
 	requestID := getRequestID(c)
 	ctx := c.Request.Context()
 
-	// Obtener parámetros de query
 	status := c.Query("status")
 	customerID := c.Query("customerId")
 
@@ -169,35 +151,27 @@ func (h *OrderHandlerGin) ListOrders(c *gin.Context) {
 		limit = h.maxPageSize
 	}
 
-	// Validar estado si se proporciona
 	if status != "" {
 		statusEnum := models.OrderStatus(status)
 		if !statusEnum.IsValid() {
-
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid status value"})
 			return
 		}
 	}
 
-	// Listar órdenes
-	orders, total, error := h.service.ListOrders(ctx, status, customerID, page, limit)
-	if error != nil {
-		h.logger.Error("Failed to list orders",
-			// zap.Error(err),
-			zap.String("requestId", requestID),
-		)
+	orders, total, err := h.service.ListOrders(ctx, status, customerID, page, limit)
+	if err != nil {
+		h.logger.Error("Failed to list orders", zap.String("requestId", requestID))
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error - Failed to list orders"})
 		return
 	}
 
-	// Calcular total de páginas
 	totalPages := int(math.Ceil(float64(total) / float64(limit)))
 
 	response := ListOrdersResponse{
 		Orders: orders,
 		Pagination: PaginationResponse{
-			Page: page,
-			// Limit:      limit,
+			Page:       page,
 			Total:      total,
 			TotalPages: totalPages,
 		},
@@ -207,20 +181,20 @@ func (h *OrderHandlerGin) ListOrders(c *gin.Context) {
 }
 
 // UpdateOrderStatus godoc
-// @Summary Actualizar estado de orden
-// @Description Cambia el estado de una orden y publica un evento
+// @Summary Update order status
+// @Description Changes the status of an order and publishes an event
 // @Tags orders
 // @Accept json
 // @Produce json
 // @Param id path string true "Order ID"
-// @Param status body UpdateStatusRequest true "Nuevo estado"
+// @Param status body UpdateStatusRequest true "New status"
 // @Success 200 {object} models.Order
-// @Failure 400 {object} apierrors.ErrorResponse
-// @Failure 404 {object} apierrors.ErrorResponse
-// @Failure 409 {object} apierrors.ErrorResponse
-// @Failure 500 {object} apierrors.ErrorResponse
-// @Router /api/v1/orders/{id}/status [patch]
-func (h *OrderHandlerGin) UpdateOrderStatus(c *gin.Context) {
+// @Failure 400 {object} ErrorResponse
+// @Failure 404 {object} ErrorResponse
+// @Failure 409 {object} ErrorResponse
+// @Failure 500 {object} ErrorResponse
+// @Router /api/orders/{id}/status [patch]
+func (h *OrderHandler) UpdateOrderStatus(c *gin.Context) {
 	requestID := getRequestID(c)
 	ctx := c.Request.Context()
 	orderID := c.Param("id")
@@ -236,15 +210,10 @@ func (h *OrderHandlerGin) UpdateOrderStatus(c *gin.Context) {
 		return
 	}
 
-	// Actualizar estado
 	newStatus := models.OrderStatus(req.Status)
 	order, err := h.service.UpdateOrderStatus(ctx, orderID, newStatus)
 	if err != nil {
-		h.logger.Error("Failed to update order status",
-			// zap.Error(err),
-			zap.String("orderId", orderID),
-			zap.String("requestId", requestID),
-		)
+		h.logger.Error("Failed to update order status", zap.String("orderId", orderID), zap.String("requestId", requestID))
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error - Failed to update order status"})
 		return
 	}
@@ -252,8 +221,7 @@ func (h *OrderHandlerGin) UpdateOrderStatus(c *gin.Context) {
 	c.JSON(http.StatusOK, order)
 }
 
-// Funciones auxiliares
-
+// Helper function to retrieve request ID from headers or context
 func getRequestID(c *gin.Context) string {
 	requestID := c.GetHeader("X-Request-ID")
 	if requestID == "" {

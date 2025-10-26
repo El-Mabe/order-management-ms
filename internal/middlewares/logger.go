@@ -7,7 +7,6 @@ import (
 	"go.uber.org/zap"
 )
 
-// Logger registra información de cada request
 func Logger(logger *zap.Logger) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		start := time.Now()

@@ -6,12 +6,19 @@ WORKDIR /app
 # Install dependencies
 RUN apk add --no-cache git
 
+# Install swag CLI
+RUN go install github.com/swaggo/swag/cmd/swag@latest
+
 # Copy go mod files
 COPY go.mod go.sum ./
 RUN go mod download
 
 # Copy source code
 COPY . .
+
+# Generate Swagger docs in cmd/api/docs
+RUN swag init -g ./cmd/api/main.go -o ./cmd/api/docs
+
 
 # Build the application
 RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo \
@@ -27,6 +34,9 @@ WORKDIR /root/
 
 # Copy binary from builder
 COPY --from=builder /app/main .
+
+# Copy Swagger docs
+COPY --from=builder /app/cmd/api/docs ./cmd/api/docs
 
 # Copy .env.example as default
 COPY --from=builder /app/.env .env

@@ -10,11 +10,11 @@ import (
 
 var log *zap.Logger
 
-// Init inicializa el logger global con el nivel y formato dados
+// Init initializes the global logger with the given level and format
 func Init(level, format string) error {
 	var err error
 
-	// Determinar el nivel de log
+	// Determine log level
 	var zapLevel zapcore.Level
 	switch strings.ToLower(level) {
 	case "debug":
@@ -29,11 +29,11 @@ func Init(level, format string) error {
 		zapLevel = zapcore.InfoLevel
 	}
 
-	// Configuración base
+	// Base logger configuration
 	cfg := zap.Config{
 		Level:            zap.NewAtomicLevelAt(zapLevel),
 		Development:      zapLevel == zapcore.DebugLevel,
-		Encoding:         strings.ToLower(format), // "json" o "console"
+		Encoding:         strings.ToLower(format), // "json" or "console"
 		OutputPaths:      []string{"stdout"},
 		ErrorOutputPaths: []string{"stderr"},
 		EncoderConfig: zapcore.EncoderConfig{
@@ -51,7 +51,7 @@ func Init(level, format string) error {
 		},
 	}
 
-	// Crear logger
+	// Build logger instance
 	log, err = cfg.Build()
 	if err != nil {
 		return fmt.Errorf("failed to initialize logger: %w", err)
@@ -61,7 +61,7 @@ func Init(level, format string) error {
 	return nil
 }
 
-// Get retorna una instancia del logger actual
+// Get returns the current logger instance
 func Get() *zap.Logger {
 	if log == nil {
 		panic("logger not initialized — call logger.Init() first")
@@ -69,7 +69,7 @@ func Get() *zap.Logger {
 	return log
 }
 
-// Sync limpia los buffers y cierra correctamente el logger
+// Sync flushes any buffered log entries
 func Sync() {
 	if log != nil {
 		_ = log.Sync()

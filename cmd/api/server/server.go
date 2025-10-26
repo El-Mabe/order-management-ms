@@ -15,6 +15,8 @@ import (
 	"go.uber.org/zap"
 )
 
+// Dependencies holds all shared resources used by the application,
+// including database connections, external clients, and services.
 type Dependencies struct {
 	MongoClient   *mongo.Client
 	MongoDB       *mongo.Database
@@ -23,8 +25,10 @@ type Dependencies struct {
 	KafkaProducer *kafka.Producer
 }
 
+// Initialize sets up and returns all core dependencies such as
+// MongoDB, Redis, Kafka, and application services.
 func Initialize(cfg *config.Config, log *zap.Logger) (*Dependencies, error) {
-	// MongoDB
+	// MongoDB setup
 	mongoClient, err := ConnectMongoDB(cfg.MongoDB)
 	if err != nil {
 		return nil, err
@@ -34,9 +38,9 @@ func Initialize(cfg *config.Config, log *zap.Logger) (*Dependencies, error) {
 	orderRepo := mongodb.NewOrderRepository(mongoDB)
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
-	_ = orderRepo.CreateIndexes(ctx) // Ignoramos error en init
+	_ = orderRepo.CreateIndexes(ctx) // Ignore index creation errors during initialization
 
-	// Redis
+	// Redis setup
 	redisClient := ConnectRedis(cfg.Redis)
 	ctx, cancel = context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -44,13 +48,13 @@ func Initialize(cfg *config.Config, log *zap.Logger) (*Dependencies, error) {
 		return nil, err
 	}
 
-	// Kafka Producer
+	// Kafka Producer setup (optional)
 	var kafkaProducer *kafka.Producer
 	if cfg.Kafka.EnableProducer {
 		kafkaProducer = kafka.NewProducer(cfg.Kafka.Brokers, cfg.Kafka.TopicOrders, log)
 	}
 
-	// Repos y servicios
+	// Repositories and services initialization
 	cacheRepo := redisrepo.NewCacheRepository(redisClient, cfg.Redis.DefaultTTL)
 	orderService := services.NewOrderService(orderRepo, cacheRepo, kafkaProducer, log)
 
@@ -63,7 +67,7 @@ func Initialize(cfg *config.Config, log *zap.Logger) (*Dependencies, error) {
 	}, nil
 }
 
-// Close cierra conexiones al finalizar la app
+// Close gracefully shuts down all active connections and releases resources.
 func (d *Dependencies) Close() {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()

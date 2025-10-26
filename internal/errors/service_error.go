@@ -4,6 +4,7 @@ import (
 	"net/http"
 )
 
+// ServiceError represents a standardized error structure for the application.
 type ServiceError struct {
 	Status            int           `json:"status"`
 	Message           string        `json:"message"`
@@ -11,12 +12,12 @@ type ServiceError struct {
 	StatusDescription string        `json:"status_description,omitempty"`
 }
 
-// Implementa la interfaz error
+// Error implements the error interface for ServiceError.
 func (e *ServiceError) Error() string {
 	return e.Message
 }
 
-// Constructor base
+// NewServiceError creates a new ServiceError with the given HTTP status, message, and optional cause.
 func NewServiceError(status int, message string, cause error) *ServiceError {
 	causes := []interface{}{}
 	if cause != nil {
@@ -31,15 +32,17 @@ func NewServiceError(status int, message string, cause error) *ServiceError {
 	}
 }
 
-// Helpers convenientes
+// BadRequest returns a ServiceError representing HTTP 400 Bad Request.
 func BadRequest(message string, cause error) *ServiceError {
 	return NewServiceError(http.StatusBadRequest, message, cause)
 }
 
+// NotFound returns a ServiceError representing HTTP 404 Not Found.
 func NotFound(message string, cause error) *ServiceError {
 	return NewServiceError(http.StatusNotFound, message, cause)
 }
 
+// Internal returns a ServiceError representing HTTP 500 Internal Server Error.
 func Internal(message string, cause error) *ServiceError {
 	return NewServiceError(http.StatusInternalServerError, message, cause)
 }

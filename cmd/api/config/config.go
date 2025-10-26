@@ -7,7 +7,7 @@ import (
 	"github.com/spf13/viper"
 )
 
-// Config almacena toda la configuración de la aplicación
+// Config stores all application configuration
 type Config struct {
 	Server  ServerConfig
 	MongoDB MongoDBConfig
@@ -17,7 +17,7 @@ type Config struct {
 	App     AppConfig
 }
 
-// ServerConfig configuración del servidor HTTP
+// ServerConfig defines the HTTP server configuration
 type ServerConfig struct {
 	Port         string
 	ReadTimeout  time.Duration
@@ -25,7 +25,7 @@ type ServerConfig struct {
 	Environment  string
 }
 
-// MongoDBConfig configuración de MongoDB
+// MongoDBConfig defines the MongoDB connection configuration
 type MongoDBConfig struct {
 	URI               string
 	Database          string
@@ -33,7 +33,7 @@ type MongoDBConfig struct {
 	MaxPoolSize       uint64
 }
 
-// RedisConfig configuración de Redis
+// RedisConfig defines the Redis cache configuration
 type RedisConfig struct {
 	URL        string
 	Password   string
@@ -42,7 +42,7 @@ type RedisConfig struct {
 	DefaultTTL time.Duration
 }
 
-// KafkaConfig configuración de Kafka
+// KafkaConfig defines the Kafka configuration for producers and consumers
 type KafkaConfig struct {
 	Brokers        []string
 	TopicOrders    string
@@ -50,13 +50,13 @@ type KafkaConfig struct {
 	EnableProducer bool
 }
 
-// LoggingConfig configuración de logging
+// LoggingConfig defines logging level and format
 type LoggingConfig struct {
 	Level  string
 	Format string
 }
 
-// AppConfig configuración de la aplicación
+// AppConfig defines general application settings
 type AppConfig struct {
 	RequestTimeout   time.Duration
 	MaxItemsPerOrder int
@@ -64,15 +64,14 @@ type AppConfig struct {
 	MaxPageSize      int
 }
 
-// Load carga la configuración desde variables de entorno
+// Load loads configuration from environment variables and .env file
 func Load() (*Config, error) {
 	viper.SetConfigFile(".env")
 	viper.AutomaticEnv()
 
-	// Intentar cargar archivo .env (opcional)
+	// Attempt to load .env file (optional)
 	_ = viper.ReadInConfig()
 
-	// Valores por defecto
 	setDefaults()
 
 	config := &Config{
@@ -120,7 +119,7 @@ func Load() (*Config, error) {
 	return config, nil
 }
 
-// Validate valida la configuración
+// Validate checks required configuration values
 func (c *Config) Validate() error {
 	if c.Server.Port == "" {
 		return fmt.Errorf("PORT is required")
@@ -137,6 +136,7 @@ func (c *Config) Validate() error {
 	return nil
 }
 
+// setDefaults sets default values for all configuration keys
 func setDefaults() {
 	// Server defaults
 	viper.SetDefault("ENV", "development")

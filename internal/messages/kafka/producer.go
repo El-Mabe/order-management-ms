@@ -10,23 +10,23 @@ import (
 	"go.uber.org/zap"
 )
 
-// Producer implementa el productor de eventos de Kafka
+// Producer implements a Kafka event producer
 type Producer struct {
 	writer *kafka.Writer
 	logger *zap.Logger
 	topic  string
 }
 
-// NewProducer crea una nueva instancia del productor
+// NewProducer creates a new Kafka producer instance
 func NewProducer(brokers []string, topic string, logger *zap.Logger) *Producer {
 	writer := &kafka.Writer{
 		Addr:                   kafka.TCP(brokers...),
 		Topic:                  topic,
-		Balancer:               &kafka.Hash{}, // Usar hash para particionar por key
-		AllowAutoTopicCreation: true,
+		Balancer:               &kafka.Hash{},    // Use hash to partition by key
+		AllowAutoTopicCreation: true,             // Automatically create topic if not exists
 		RequiredAcks:           kafka.RequireOne, // At-least-once delivery
-		Compression:            kafka.Snappy,
-		MaxAttempts:            3,
+		Compression:            kafka.Snappy,     // Compress messages
+		MaxAttempts:            3,                // Retry on failure
 	}
 
 	return &Producer{
@@ -36,9 +36,9 @@ func NewProducer(brokers []string, topic string, logger *zap.Logger) *Producer {
 	}
 }
 
-// PublishOrderEvent publica un evento de orden
+// PublishOrderEvent publishes an order event to Kafka
 func (p *Producer) PublishOrderEvent(ctx context.Context, event *models.OrderEvent) error {
-	// Serializar evento a JSON
+	// Marshal event to JSON
 	data, err := json.Marshal(event)
 	if err != nil {
 		p.logger.Error("Failed to marshal event",
@@ -48,8 +48,7 @@ func (p *Producer) PublishOrderEvent(ctx context.Context, event *models.OrderEve
 		return fmt.Errorf("failed to marshal event: %w", err)
 	}
 
-	// Crear mensaje de Kafka
-	// Usar orderID como key para mantener orden de eventos por orden
+	// Create Kafka message, using orderID as key to preserve event order per order
 	message := kafka.Message{
 		Key:   []byte(event.OrderID),
 		Value: data,
@@ -59,9 +58,8 @@ func (p *Producer) PublishOrderEvent(ctx context.Context, event *models.OrderEve
 		},
 	}
 
-	// Publicar mensaje
-	err = p.writer.WriteMessages(ctx, message)
-	if err != nil {
+	// Publish message
+	if err := p.writer.WriteMessages(ctx, message); err != nil {
 		p.logger.Error("Failed to publish event",
 			zap.Error(err),
 			zap.String("eventId", event.EventID),
@@ -81,7 +79,7 @@ func (p *Producer) PublishOrderEvent(ctx context.Context, event *models.OrderEve
 	return nil
 }
 
-// Close cierra el productor
+// Close shuts down the Kafka producer
 func (p *Producer) Close() error {
 	return p.writer.Close()
 }

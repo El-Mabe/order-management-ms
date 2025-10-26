@@ -23,13 +23,11 @@ type Repository interface {
 	InvalidateOrder(ctx context.Context, orderID string) *repositories.RepositoryError
 }
 
-// CacheRepository implementa el repositorio de caché con Redis
 type CacheRepository struct {
 	client     *redis.Client
 	defaultTTL time.Duration
 }
 
-// NewCacheRepository crea una nueva instancia del repositorio de caché
 func NewCacheRepository(client *redis.Client, defaultTTL time.Duration) *CacheRepository {
 	return &CacheRepository{
 		client:     client,
@@ -37,14 +35,13 @@ func NewCacheRepository(client *redis.Client, defaultTTL time.Duration) *CacheRe
 	}
 }
 
-// GetOrder obtiene una orden del caché
 func (r *CacheRepository) GetOrder(ctx context.Context, orderID string) (*models.Order, *repositories.RepositoryError) {
 	key := r.orderKey(orderID)
 
 	data, err := r.client.Get(ctx, key).Bytes()
 	if err != nil {
 		if err == redis.Nil {
-			return nil, nil // No existe en caché (cache miss)
+			return nil, nil
 		}
 		return nil, &repositories.RepositoryError{
 			StatusCode: http.StatusNotFound,
@@ -65,7 +62,6 @@ func (r *CacheRepository) GetOrder(ctx context.Context, orderID string) (*models
 	return &order, nil
 }
 
-// SetOrder guarda una orden en el caché
 func (r *CacheRepository) SetOrder(ctx context.Context, order *models.Order) *repositories.RepositoryError {
 	key := r.orderKey(order.ID)
 
@@ -86,12 +82,9 @@ func (r *CacheRepository) SetOrder(ctx context.Context, order *models.Order) *re
 			Message:    err.Error(),
 		}
 	}
-
-	// Si todo salió bien, no hay error
 	return nil
 }
 
-// InvalidateOrder invalida (elimina) una orden del caché
 func (r *CacheRepository) InvalidateOrder(ctx context.Context, orderID string) *repositories.RepositoryError {
 	key := r.orderKey(orderID)
 	if err := r.client.Del(ctx, key).Err(); err != nil {
@@ -102,11 +95,9 @@ func (r *CacheRepository) InvalidateOrder(ctx context.Context, orderID string) *
 		}
 	}
 
-	// Si todo salió bien, no hay error
 	return nil
 }
 
-// Ping verifica la conexión con Redis
 func (r *CacheRepository) Ping(ctx context.Context) *repositories.RepositoryError {
 	if err := r.client.Ping(ctx).Err(); err != nil {
 		return &repositories.RepositoryError{
@@ -118,7 +109,6 @@ func (r *CacheRepository) Ping(ctx context.Context) *repositories.RepositoryErro
 	return nil
 }
 
-// orderKey genera la key de Redis para una orden
 func (r *CacheRepository) orderKey(orderID string) string {
 	return fmt.Sprintf("%s%s", orderKeyPrefix, orderID)
 }

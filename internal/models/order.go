@@ -34,19 +34,12 @@ type Order struct {
 	UpdatedAt   time.Time   `json:"updatedAt" bson:"updatedAt"`
 }
 
-// type OrderItem struct {
-// 	ID        string
-// 	ProductID string
-// 	Quantity  int
-// }
-
 type OrderItem struct {
 	SKU      string  `json:"sku" bson:"sku" validate:"required,min=3,max=50"`
 	Quantity int     `json:"quantity" bson:"quantity" validate:"required,min=1,max=10000"`
 	Price    float64 `json:"price" bson:"price" validate:"required,gt=0"`
 }
 
-// IsValid verifica si el estado es válido
 func (s OrderStatus) IsValid() bool {
 	switch s {
 	case StatusNew, StatusInProgress, StatusDelivered, StatusCancelled:
@@ -55,12 +48,10 @@ func (s OrderStatus) IsValid() bool {
 	return false
 }
 
-// Subtotal calcula el subtotal del ítem
 func (i OrderItem) Subtotal() float64 {
 	return float64(i.Quantity) * i.Price
 }
 
-// NewOrder crea una nueva orden
 func NewOrder(customerID string, items []OrderItem) (*Order, error) {
 	if customerID == "" {
 		return nil, ErrInvalidOrderData
@@ -70,7 +61,6 @@ func NewOrder(customerID string, items []OrderItem) (*Order, error) {
 		return nil, ErrInvalidOrderData
 	}
 
-	// Validar UUID del cliente
 	if _, err := uuid.Parse(customerID); err != nil {
 		return nil, ErrInvalidOrderData
 	}
@@ -108,7 +98,6 @@ func (o *Order) CanTransitionTo(newStatus OrderStatus) bool {
 	return false
 }
 
-// UpdateStatus actualiza el estado de la orden si la transición es válida
 func (o *Order) UpdateStatus(newStatus OrderStatus) error {
 	if !newStatus.IsValid() {
 		return ErrInvalidOrderData
@@ -125,7 +114,6 @@ func (o *Order) UpdateStatus(newStatus OrderStatus) error {
 	return nil
 }
 
-// CalculateTotalAmount recalcula el monto total
 func (o *Order) CalculateTotalAmount() {
 	total := 0.0
 	for _, item := range o.Items {

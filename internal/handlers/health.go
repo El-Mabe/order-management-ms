@@ -11,13 +11,13 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/readpref"
 )
 
-// HealthHandler maneja el endpoint de health check
+// HealthHandler handles the health check endpoint.
 type HealthHandler struct {
 	mongoDB *mongo.Database
 	redis   *redis.Client
 }
 
-// NewHealthHandler crea una nueva instancia del handler
+// NewHealthHandler creates a new instance of HealthHandler.
 func NewHealthHandler(mongoDB *mongo.Database, redis *redis.Client) *HealthHandler {
 	return &HealthHandler{
 		mongoDB: mongoDB,
@@ -25,21 +25,15 @@ func NewHealthHandler(mongoDB *mongo.Database, redis *redis.Client) *HealthHandl
 	}
 }
 
-// HealthResponseGin representa la respuesta del health check
+// HealthResponse represents the response structure for health checks.
 type HealthResponse struct {
 	Status       string            `json:"status"`
 	Timestamp    time.Time         `json:"timestamp"`
 	Dependencies map[string]string `json:"dependencies"`
 }
 
-// CheckHealthGin godoc
-// @Summary Health check
-// @Description Verifica el estado del servicio y sus dependencias
-// @Tags health
-// @Produce json
-// @Success 200 {object} HealthResponseGin
-// @Failure 503 {object} HealthResponseGin
-// @Router /health [get]
+// CheckHealth checks the status of the service and its dependencies (MongoDB, Redis, Kafka).
+// Returns HTTP 200 if all dependencies are healthy, otherwise HTTP 503.
 func (h *HealthHandler) CheckHealth(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -47,7 +41,7 @@ func (h *HealthHandler) CheckHealth(c *gin.Context) {
 	dependencies := make(map[string]string)
 	allHealthy := true
 
-	// Check MongoDB
+	// Check MongoDB connection
 	mongoStatus := "connected"
 	if err := h.mongoDB.Client().Ping(ctx, readpref.Primary()); err != nil {
 		mongoStatus = "disconnected"
@@ -55,7 +49,7 @@ func (h *HealthHandler) CheckHealth(c *gin.Context) {
 	}
 	dependencies["mongodb"] = mongoStatus
 
-	// Check Redis
+	// Check Redis connection
 	redisStatus := "connected"
 	if err := h.redis.Ping(ctx).Err(); err != nil {
 		redisStatus = "disconnected"
@@ -63,7 +57,7 @@ func (h *HealthHandler) CheckHealth(c *gin.Context) {
 	}
 	dependencies["redis"] = redisStatus
 
-	// Check Kafka (simplificado - en producción verificar conexión real)
+	// Kafka status (simplified - in production verify actual connection)
 	dependencies["kafka"] = "connected"
 
 	status := "healthy"

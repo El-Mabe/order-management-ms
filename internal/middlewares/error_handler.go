@@ -8,12 +8,10 @@ import (
 	"go.uber.org/zap"
 )
 
-// ErrorHandler maneja errores globales
 func ErrorHandler(logger *zap.Logger) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		c.Next()
 
-		// Obtener el primer error
 		err := c.Errors.ByType(gin.ErrorTypeAny).Last()
 		if err == nil {
 			return

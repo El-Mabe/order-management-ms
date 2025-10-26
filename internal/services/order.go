@@ -9,8 +9,6 @@ import (
 	"orders/internal/repositories/mongodb"
 	"orders/internal/repositories/redis"
 
-	// "orders/internal/repositories/redis"
-
 	"go.uber.org/zap"
 )
 
@@ -32,14 +30,12 @@ type OrderService interface {
 	ListOrders(ctx context.Context, status, customerID string, page, limit int) ([]*models.Order, int64, *ServiceError)
 }
 
-// CacheRepository define la interfaz del repositorio de caché
 type CacheRepository interface {
 	GetOrder(ctx context.Context, orderID string) (*models.Order, *repositories.RepositoryError)
 	SetOrder(ctx context.Context, order *models.Order) *repositories.RepositoryError
 	InvalidateOrder(ctx context.Context, orderID string) *repositories.RepositoryError
 }
 
-// EventPublisher define la interfaz del publicador de eventos
 type EventPublisher interface {
 	PublishOrderEvent(ctx context.Context, event *models.OrderEvent) error
 }
@@ -60,14 +56,12 @@ func NewOrderService(orderRepo mongodb.Repository, cacheRepo redis.Repository, e
 	}
 }
 
-// CreateOrder crea una nueva orden
 func (s *order) CreateOrder(ctx context.Context, customerID string, items []models.OrderItem) (*models.Order, *ServiceError) {
 	s.logger.Debug("Creating order",
 		zap.String("customerId", customerID),
 		zap.Int("itemsCount", len(items)),
 	)
 
-	// Crear orden en dominio
 	order, err := models.NewOrder(customerID, items)
 	if err != nil {
 		s.logger.Error("Failed to create order entity",
@@ -81,7 +75,6 @@ func (s *order) CreateOrder(ctx context.Context, customerID string, items []mode
 		}
 	}
 
-	// Persistir en MongoDB
 	if err := s.orderRepo.Create(ctx, order); err != nil {
 		s.logger.Error("Failed to persist order",
 			// zap.Error(err),
@@ -97,7 +90,7 @@ func (s *order) CreateOrder(ctx context.Context, customerID string, items []mode
 	s.logger.Info("Order created successfully",
 		zap.String("orderId", order.ID),
 		zap.String("customerId", order.CustomerID),
-		// zap.Float64("totalAmount", order.TotalAmount),
+		zap.Float64("totalAmount", order.TotalAmount),
 	)
 
 	return order, nil
@@ -108,7 +101,6 @@ func (s *order) GetOrderByID(ctx context.Context, orderID string) (*models.Order
 		zap.String("orderId", orderID),
 	)
 
-	// Intentar obtener del caché
 	order, err := s.cacheRepo.GetOrder(ctx, orderID)
 	if err != nil {
 		s.logger.Warn("Cache error, falling back to database",
@@ -122,7 +114,6 @@ func (s *order) GetOrderByID(ctx context.Context, orderID string) (*models.Order
 		return order, nil
 	}
 
-	// Si no está en caché, buscar en MongoDB
 	order, err = s.orderRepo.FindByID(ctx, orderID)
 	if err != nil {
 		s.logger.Error("Failed to get order from database",
@@ -136,12 +127,10 @@ func (s *order) GetOrderByID(ctx context.Context, orderID string) (*models.Order
 		}
 	}
 
-	// Guardar en caché para futuras consultas
 	if err := s.cacheRepo.SetOrder(ctx, order); err != nil {
 		s.logger.Warn("Failed to cache order",
 			zap.String("orderId", orderID),
 		)
-		// No retornar error, el caché es secundario
 	}
 
 	s.logger.Debug("Order retrieved from database",
@@ -190,14 +179,12 @@ func (s *order) ListOrders(ctx context.Context, status, customerID string, page,
 	return orders, total, nil
 }
 
-// UpdateOrderStatus actualiza el estado de una orden
 func (s *order) UpdateOrderStatus(ctx context.Context, orderID string, newStatus models.OrderStatus) (*models.Order, *ServiceError) {
 	s.logger.Debug("Updating order status",
 		zap.String("orderId", orderID),
 		zap.String("newStatus", string(newStatus)),
 	)
 
-	// Obtener orden actual
 	order, err := s.orderRepo.FindByID(ctx, orderID)
 	if err != nil {
 		return nil, &ServiceError{
@@ -209,7 +196,6 @@ func (s *order) UpdateOrderStatus(ctx context.Context, orderID string, newStatus
 
 	oldStatus := order.Status
 
-	// Actualizar estado en dominio (con validación de transición)
 	if err := order.UpdateStatus(newStatus); err != nil {
 		s.logger.Warn("Invalid status transition",
 			zap.Error(err),
@@ -224,7 +210,6 @@ func (s *order) UpdateOrderStatus(ctx context.Context, orderID string, newStatus
 		}
 	}
 
-	// Persistir cambios en MongoDB
 	if err := s.orderRepo.Update(ctx, order); err != nil {
 		s.logger.Error("Failed to update order",
 			zap.String("orderId", orderID),
@@ -236,15 +221,12 @@ func (s *order) UpdateOrderStatus(ctx context.Context, orderID string, newStatus
 		}
 	}
 
-	// Invalidar caché
 	if err := s.cacheRepo.InvalidateOrder(ctx, orderID); err != nil {
 		s.logger.Warn("Failed to invalidate cache",
 			zap.String("orderId", orderID),
 		)
-		// No retornar error, continuar con el flujo
 	}
 
-	// Publicar evento en Kafka
 	event := models.NewOrderStatusChangedEvent(order.ID, order.CustomerID, oldStatus, newStatus)
 	if err := s.eventPublisher.PublishOrderEvent(ctx, event); err != nil {
 		s.logger.Error("Failed to publish event",
@@ -252,8 +234,6 @@ func (s *order) UpdateOrderStatus(ctx context.Context, orderID string, newStatus
 			zap.String("orderId", orderID),
 			zap.String("eventId", event.EventID),
 		)
-		// No retornar error - el cambio ya se persistió
-		// En producción, esto debería ir a un sistema de retry/DLQ
 	}
 
 	s.logger.Info("Order status updated successfully",

@@ -6,14 +6,12 @@ import (
 	"github.com/google/uuid"
 )
 
-// EventType representa el tipo de evento
 type EventType string
 
 const (
 	EventOrderStatusChanged EventType = "ORDER_STATUS_CHANGED"
 )
 
-// OrderEvent representa un evento relacionado con una orden
 type OrderEvent struct {
 	EventID    string        `json:"eventId"`
 	EventType  EventType     `json:"eventType"`
@@ -25,13 +23,11 @@ type OrderEvent struct {
 	Metadata   EventMetadata `json:"metadata"`
 }
 
-// EventMetadata contiene metadatos adicionales del evento
 type EventMetadata struct {
 	ChangedBy string `json:"changedBy"`
 	Reason    string `json:"reason"`
 }
 
-// NewOrderStatusChangedEvent crea un nuevo evento de cambio de estado
 func NewOrderStatusChangedEvent(orderID, customerID string, oldStatus, newStatus OrderStatus) *OrderEvent {
 	return &OrderEvent{
 		EventID:    uuid.New().String(),

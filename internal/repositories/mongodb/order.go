@@ -16,7 +16,6 @@ const (
 	ordersCollection = "orders"
 )
 
-// OrderRepository implementa el repositorio de órdenes para MongoDB
 type OrderRepository struct {
 	db         *mongo.Database
 	collection *mongo.Collection
@@ -29,7 +28,6 @@ type Repository interface {
 	Update(ctx context.Context, order *models.Order) *repositories.RepositoryError
 }
 
-// NewOrderRepository crea una nueva instancia del repositorio
 func NewOrderRepository(db *mongo.Database) *OrderRepository {
 	return &OrderRepository{
 		db:         db,
@@ -37,7 +35,6 @@ func NewOrderRepository(db *mongo.Database) *OrderRepository {
 	}
 }
 
-// Create inserta una nueva orden
 func (r *OrderRepository) Create(ctx context.Context, order *models.Order) *repositories.RepositoryError {
 	_, err := r.collection.InsertOne(ctx, order)
 	if err != nil {
@@ -57,7 +54,6 @@ func (r *OrderRepository) Create(ctx context.Context, order *models.Order) *repo
 	return nil
 }
 
-// FindByID busca una orden por ID
 func (r *OrderRepository) FindByID(ctx context.Context, id string) (*models.Order, *repositories.RepositoryError) {
 	var order models.Order
 	err := r.collection.FindOne(ctx, bson.M{"_id": id}).Decode(&order)
@@ -78,7 +74,6 @@ func (r *OrderRepository) FindByID(ctx context.Context, id string) (*models.Orde
 	return &order, nil
 }
 
-// FindWithFilters busca órdenes con filtros y paginación
 func (r *OrderRepository) FindWithFilters(ctx context.Context, filters map[string]interface{}, page, limit int) ([]*models.Order, int64, *repositories.RepositoryError) {
 	// Construir filtro
 	filter := bson.M{}
@@ -89,7 +84,6 @@ func (r *OrderRepository) FindWithFilters(ctx context.Context, filters map[strin
 		filter["customerId"] = customerID
 	}
 
-	// Contar total
 	total, err := r.collection.CountDocuments(ctx, filter)
 	if err != nil {
 		return nil, 0, &repositories.RepositoryError{
@@ -99,10 +93,8 @@ func (r *OrderRepository) FindWithFilters(ctx context.Context, filters map[strin
 		}
 	}
 
-	// Calcular skip
 	skip := (page - 1) * limit
 
-	// Opciones de búsqueda
 	opts := options.Find().
 		SetSort(bson.D{{Key: "createdAt", Value: -1}}).
 		SetLimit(int64(limit)).
@@ -130,7 +122,6 @@ func (r *OrderRepository) FindWithFilters(ctx context.Context, filters map[strin
 	return orders, total, nil
 }
 
-// Update actualiza una orden con control de concurrencia optimista
 func (r *OrderRepository) Update(ctx context.Context, order *models.Order) *repositories.RepositoryError {
 	filter := bson.M{
 		"_id":     order.ID,
@@ -155,7 +146,6 @@ func (r *OrderRepository) Update(ctx context.Context, order *models.Order) *repo
 	}
 
 	if result.MatchedCount == 0 {
-		// Verificar si existe la orden
 		_, err := r.FindByID(ctx, order.ID)
 		if err != nil {
 			return &repositories.RepositoryError{
@@ -164,7 +154,6 @@ func (r *OrderRepository) Update(ctx context.Context, order *models.Order) *repo
 				Message:    "Order not found",
 			}
 		}
-		// Existe pero versión no coincide
 		return &repositories.RepositoryError{
 			StatusCode: http.StatusConflict,
 			Cause:      "version conflict",
@@ -175,7 +164,6 @@ func (r *OrderRepository) Update(ctx context.Context, order *models.Order) *repo
 	return nil
 }
 
-// CreateIndexes crea los índices necesarios
 func (r *OrderRepository) CreateIndexes(ctx context.Context) error {
 	indexes := []mongo.IndexModel{
 		{
